@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Phone, User } from "lucide-react";
 import Link from "next/link";
 
 export default function LoginPage() {
+	const router = useRouter();
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 	const [phoneNumber, setPhoneNumber] = useState("");
@@ -26,7 +28,12 @@ export default function LoginPage() {
 		// Simulate OTP sending
 		setOtpSent(true);
 		console.log("OTP sent to:", phoneNumber);
-		// Here you would call your API to send OTP
+		
+		// Navigate to verify page with phone and name as URL parameters
+		const fullName = `${firstName} ${lastName}`;
+		router.push(
+			`/verify?phone=${phoneNumber}&name=${encodeURIComponent(fullName)}`
+		);
 	};
 
 	return (
