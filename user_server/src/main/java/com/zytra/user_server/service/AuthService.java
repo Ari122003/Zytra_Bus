@@ -1,8 +1,8 @@
 package com.zytra.user_server.service;
 
 import com.zytra.user_server.dto.request.LoginRequest;
-import com.zytra.user_server.dto.response.OtpSentResponse;
+import com.zytra.user_server.dto.response.LoginResponse;
 
 public interface AuthService {
-    OtpSentResponse sendOtp(LoginRequest request);
+    LoginResponse login(LoginRequest request);
 }

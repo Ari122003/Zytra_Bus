@@ -3,37 +3,87 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Phone, User } from "lucide-react";
+import { Mail, Lock, Phone, Calendar, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { z } from "zod";
+import { loginSchema } from "@/lib/zod";
+import type { LoginFormData } from "@/lib/zod";
+import { useLogin } from "@/hooks/useAuth";
+import { AxiosError } from "axios";
+import type { ErrorResponse } from "@/types/auth.type";
 
 export default function LoginPage() {
 	const router = useRouter();
-	const [firstName, setFirstName] = useState("");
-	const [lastName, setLastName] = useState("");
+	const [email, setEmail] = useState("");
 	const [phoneNumber, setPhoneNumber] = useState("");
-	const [otpSent, setOtpSent] = useState(false);
+	const [dob, setDob] = useState("");
+	const [password, setPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
+	const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
+	const [apiError, setApiError] = useState<string>("");
 
-	const handleGetOtp = () => {
-		// Validate inputs
-		if (!firstName.trim() || !lastName.trim() || !phoneNumber.trim()) {
-			alert("Please fill in all fields");
-			return;
+	const loginMutation = useLogin();
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setErrors({});
+		setApiError("");
+
+		try {
+			// Validate form data
+			const data = {
+				email,
+				phoneNumber,
+				dob,
+				password,
+				confirmPassword,
+			};
+
+			const validatedData = loginSchema.parse(data);
+
+			// Call API with validated data
+			await loginMutation.mutateAsync(validatedData, {
+				onSuccess: (response) => {
+					console.log("Login response:", response);
+					// Store email for OTP verification page
+					sessionStorage.setItem("verificationEmail", email);
+					router.push("/verify");
+				},
+				onError: (error: AxiosError<ErrorResponse>) => {
+					if (error.response?.data) {
+						const errorData = error.response.data;
+						
+						// Handle field-specific errors
+						if (errorData.errors) {
+							const fieldErrors: Partial<Record<keyof LoginFormData, string>> = {};
+							Object.entries(errorData.errors).forEach(([field, message]) => {
+								fieldErrors[field as keyof LoginFormData] = message;
+							});
+							setErrors(fieldErrors);
+						} else {
+							// Handle general error message
+							setApiError(errorData.message || "An error occurred during login");
+						}
+					} else if (error.request) {
+						// Network error
+						setApiError("Network error. Please check your connection and try again.");
+					} else {
+						// Other errors
+						setApiError("An unexpected error occurred. Please try again.");
+					}
+				},
+			});
+		} catch (error) {
+			if (error instanceof z.ZodError) {
+				// Handle validation errors
+				const fieldErrors: Partial<Record<keyof LoginFormData, string>> = {};
+				error.issues.forEach((issue) => {
+					const path = issue.path[0] as keyof LoginFormData;
+					fieldErrors[path] = issue.message;
+				});
+				setErrors(fieldErrors);
+			}
 		}
-
-		if (phoneNumber.length !== 10) {
-			alert("Please enter a valid 10-digit phone number");
-			return;
-		}
-
-		// Simulate OTP sending
-		setOtpSent(true);
-		console.log("OTP sent to:", phoneNumber);
-		
-		// Navigate to verify page with phone and name as URL parameters
-		const fullName = `${firstName} ${lastName}`;
-		router.push(
-			`/verify?phone=${phoneNumber}&name=${encodeURIComponent(fullName)}`
-		);
 	};
 
 	return (
@@ -57,50 +107,40 @@ export default function LoginPage() {
 
 				{/* Login Card */}
 				<div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 md:p-8">
-					<form
-						onSubmit={(e) => {
-							e.preventDefault();
-							handleGetOtp();
-						}}
-						className="space-y-6">
-						{/* First Name */}
-						<div>
-							<label
-								htmlFor="firstName"
-								className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-								First Name
-							</label>
-							<div className="flex items-center gap-2 mt-2">
-								<User size={18} className="text-primary" />
-								<input
-									id="firstName"
-									type="text"
-									value={firstName}
-									onChange={(e) => setFirstName(e.target.value)}
-									className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-									placeholder="Enter your first name"
-								/>
-							</div>
+					{/* API Error Message */}
+					{apiError && (
+						<div className="mb-5 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
+							<AlertCircle className="text-red-500 mt-0.5 flex-shrink-0" size={18} />
+							<p className="text-sm text-red-700 dark:text-red-400">{apiError}</p>
 						</div>
+					)}
 
-						{/* Last Name */}
+					<form onSubmit={handleSubmit} className="space-y-5">
+						{/* Email */}
 						<div>
 							<label
-								htmlFor="lastName"
+								htmlFor="email"
 								className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-								Last Name
+								Email Address
 							</label>
 							<div className="flex items-center gap-2 mt-2">
-								<User size={18} className="text-primary" />
+								<Mail size={18} className="text-primary" />
 								<input
-									id="lastName"
-									type="text"
-									value={lastName}
-									onChange={(e) => setLastName(e.target.value)}
-									className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-									placeholder="Enter your last name"
+									id="email"
+									type="email"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									className={`w-full bg-input border ${
+										errors.email ? "border-red-500" : "border-border"
+									} rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 ${
+										errors.email ? "focus:ring-red-500" : "focus:ring-primary"
+									}`}
+									placeholder="Enter your email"
 								/>
 							</div>
+							{errors.email && (
+								<p className="text-xs text-red-500 mt-1">{errors.email}</p>
+							)}
 						</div>
 
 						{/* Phone Number */}
@@ -117,36 +157,115 @@ export default function LoginPage() {
 									type="tel"
 									value={phoneNumber}
 									onChange={(e) =>
-										setPhoneNumber(
-											e.target.value.replace(/\D/g, "").slice(0, 10)
-										)
+										setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))
 									}
-									className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+									className={`w-full bg-input border ${
+										errors.phoneNumber ? "border-red-500" : "border-border"
+									} rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 ${
+										errors.phoneNumber ? "focus:ring-red-500" : "focus:ring-primary"
+									}`}
 									placeholder="Enter 10-digit phone number"
 									maxLength={10}
 								/>
 							</div>
+							{errors.phoneNumber && (
+								<p className="text-xs text-red-500 mt-1">{errors.phoneNumber}</p>
+							)}
+						</div>
+
+						{/* Date of Birth */}
+						<div>
+							<label
+								htmlFor="dob"
+								className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+								Date of Birth
+							</label>
+							<div className="flex items-center gap-2 mt-2">
+								<Calendar size={18} className="text-primary" />
+								<input
+									id="dob"
+									type="date"
+									value={dob}
+									onChange={(e) => setDob(e.target.value)}
+									className={`w-full bg-input border ${
+										errors.dob ? "border-red-500" : "border-border"
+									} rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 ${
+										errors.dob ? "focus:ring-red-500" : "focus:ring-primary"
+									}`}
+								/>
+							</div>
+							{errors.dob && (
+								<p className="text-xs text-red-500 mt-1">{errors.dob}</p>
+							)}
+						</div>
+
+						{/* Password */}
+						<div>
+							<label
+								htmlFor="password"
+								className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+								Password
+							</label>
+							<div className="flex items-center gap-2 mt-2">
+								<Lock size={18} className="text-primary" />
+								<input
+									id="password"
+									type="password"
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									className={`w-full bg-input border ${
+										errors.password ? "border-red-500" : "border-border"
+									} rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 ${
+										errors.password ? "focus:ring-red-500" : "focus:ring-primary"
+									}`}
+									placeholder="Enter your password"
+								/>
+							</div>
+							{errors.password && (
+								<p className="text-xs text-red-500 mt-1">{errors.password}</p>
+							)}
 							<p className="text-xs text-muted-foreground mt-1">
-								We&apos;ll send an OTP to this number
+								Must contain uppercase, lowercase, number, and be 8+ characters
 							</p>
 						</div>
 
-						{/* Get OTP Button */}
+						{/* Confirm Password */}
+						<div>
+							<label
+								htmlFor="confirmPassword"
+								className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+								Confirm Password
+							</label>
+							<div className="flex items-center gap-2 mt-2">
+								<Lock size={18} className="text-primary" />
+								<input
+									id="confirmPassword"
+									type="password"
+									value={confirmPassword}
+									onChange={(e) => setConfirmPassword(e.target.value)}
+									className={`w-full bg-input border ${
+										errors.confirmPassword ? "border-red-500" : "border-border"
+									} rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 ${
+										errors.confirmPassword ? "focus:ring-red-500" : "focus:ring-primary"
+									}`}
+									placeholder="Confirm your password"
+								/>
+							</div>
+							{errors.confirmPassword && (
+								<p className="text-xs text-red-500 mt-1">
+									{errors.confirmPassword}
+								</p>
+							)}
+						</div>
+
+						{/* Submit Button */}
 						<Button
 							type="submit"
-							className="w-full bg-primary hover:bg-primary/90 text-white py-2 text-lg font-semibold rounded-lg">
-							Get OTP
+							disabled={loginMutation.isPending}
+							className="w-full bg-primary hover:bg-primary/90 text-white py-2 text-lg font-semibold rounded-lg disabled:opacity-50">
+							{loginMutation.isPending ? "Processing..." : "Sign Up"}
 						</Button>
 					</form>
-
-					{/* Status Message */}
-					{otpSent && (
-						<div className="mt-4 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-							<p className="text-sm text-green-700 dark:text-green-300">
-								OTP sent to <span className="font-semibold">{phoneNumber}</span>
-							</p>
-						</div>
-					)}
 				</div>
 
 				{/* Footer */}

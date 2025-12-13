@@ -21,4 +21,10 @@ public class OtpUtil {
             throw new RuntimeException("Error hashing OTP", e);
         }
     }
+
+    public static boolean verifyOtp(String plainOtp, String hashedOtp) {
+        String hashedInput = hashOtp(plainOtp);
+        return hashedInput.equals(hashedOtp);
+    }
+
 }

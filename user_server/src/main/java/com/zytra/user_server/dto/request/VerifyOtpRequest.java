@@ -8,7 +8,17 @@ import lombok.Setter;
 @Getter
 @Setter
 
-public class LoginRequest {
+public class VerifyOtpRequest {
+
+    @NotBlank(message = "Name is required")
+    private String name;
+
+    @NotBlank(message = "DOB is required (YYYY-MM-DD)")
+    private String dob;
+
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone must be 10 digits")
+    private String phone;
 
     @NotBlank(message = "Email is required")
     @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$", message = "Invalid email format")
@@ -17,5 +27,9 @@ public class LoginRequest {
     @NotBlank(message = "Password is required")
     @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$", message = "Password must be at least 8 characters long and include uppercase, lowercase, digit, and special character")
     private String password;
+
+    @NotBlank(message = "OTP is required")
+    @Pattern(regexp = "^[0-9]{6}$", message = "OTP must be 6 digits")
+    private String otp;
 
 }
