@@ -2,7 +2,10 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
+import { useAuth } from "@/hooks/useAuth"
+import { userApi } from "@/lib/api/user.api"
+import { ErrorCard } from "@/components/ui/error-card"
 import { Button } from "@/components/ui/button"
 import {
   User,
@@ -15,22 +18,36 @@ import {
   Lock,
   HelpCircle,
   Trash2,
+  Loader2,
 } from "lucide-react"
 
 export default function AccountPage() {
-  const router = useRouter()
+  const { user, logout: authLogout } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [profileImage, setProfileImage] = useState<string>("/avatar-placeholder.png")
-  const [firstName, setFirstName] = useState("John")
-  const [lastName, setLastName] = useState("Doe")
-  const [dob, setDob] = useState("1990-01-01")
-  const [email, setEmail] = useState("john.doe@example.com")
-  const [phone, setPhone] = useState("+1 (555) 123-4567")
+  const [editName, setEditName] = useState("")
+  const [editDob, setEditDob] = useState("")
+  const [editEmail, setEditEmail] = useState("")
+  const [editPhone, setEditPhone] = useState("")
   const [isEditingNameDob, setIsEditingNameDob] = useState(false)
   const [isEditingEmail, setIsEditingEmail] = useState(false)
   const [isEditingPhone, setIsEditingPhone] = useState(false)
   const [activeTab, setActiveTab] = useState<"profile" | "settings" | "payment">("profile")
+
+  // Fetch user details with React Query
+  const { data: userDetails, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['userDetails', user?.id],
+    queryFn: () => userApi.getUserDetails(user!.id!),
+    enabled: !!user?.id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  const name = userDetails?.name || ""
+  const email = userDetails?.email || ""
+  const phone = userDetails?.phone || ""
+  const dob = userDetails?.dob || ""
+
 
   const handleProfileImageClick = () => {
     fileInputRef.current?.click()
@@ -68,12 +85,12 @@ export default function AccountPage() {
 
   const handleUpdateNameAndDob = async () => {
     try {
-      console.log("Updating name & DOB:", { firstName, lastName, dob })
-      // API call to update name and date of birth
+      console.log("Updating name & DOB:", { name: editName, dob: editDob })
+      // TODO: API call to update name and date of birth
       // const response = await fetch('/api/profile/update-name-dob', {
       //   method: 'PATCH',
       //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ firstName, lastName, dob })
+      //   body: JSON.stringify({ name: editName, dob: editDob })
       // })
       // const data = await response.json()
       // if (data.success) setIsEditingNameDob(false)
@@ -85,12 +102,12 @@ export default function AccountPage() {
 
   const handleUpdateEmail = async () => {
     try {
-      console.log("Updating email:", { email })
-      // API call to update email
+      console.log("Updating email:", { email: editEmail })
+      // TODO: API call to update email
       // const response = await fetch('/api/profile/update-email', {
       //   method: 'PATCH',
       //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email })
+      //   body: JSON.stringify({ email: editEmail })
       // })
       // const data = await response.json()
       // if (data.success) setIsEditingEmail(false)
@@ -102,12 +119,12 @@ export default function AccountPage() {
 
   const handleUpdatePhone = async () => {
     try {
-      console.log("Updating phone:", { phone })
-      // API call to update phone
+      console.log("Updating phone:", { phone: editPhone })
+      // TODO: API call to update phone
       // const response = await fetch('/api/profile/update-phone', {
       //   method: 'PATCH',
       //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ phone })
+      //   body: JSON.stringify({ phone: editPhone })
       // })
       // const data = await response.json()
       // if (data.success) setIsEditingPhone(false)
@@ -117,10 +134,36 @@ export default function AccountPage() {
     }
   }
 
-  const handleLogout = () => {
-    // Clear any user data
-    localStorage.removeItem("userToken")
-    router.push("/login")
+  const handleLogout = async () => {
+    try {
+      await authLogout()
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (isError) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Failed to load your profile information. Please try again.";
+
+    return (
+      <ErrorCard
+        title="Failed to Load Profile"
+        message={errorMessage}
+        onRetry={() => refetch()}
+        showRetryButton={true}
+      />
+    );
   }
 
   return (
@@ -249,23 +292,13 @@ export default function AccountPage() {
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">First Name</label>
+                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Full Name</label>
                           <input
                             type="text"
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            disabled={!isEditingNameDob}
-                            className="w-full mt-2 px-4 py-2 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Last Name</label>
-                          <input
-                            type="text"
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
+                            value={isEditingNameDob ? editName : name}
+                            onChange={(e) => setEditName(e.target.value)}
                             disabled={!isEditingNameDob}
                             className="w-full mt-2 px-4 py-2 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                           />
@@ -274,8 +307,8 @@ export default function AccountPage() {
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date of Birth</label>
                           <input
                             type="date"
-                            value={dob}
-                            onChange={(e) => setDob(e.target.value)}
+                            value={isEditingNameDob ? editDob : dob}
+                            onChange={(e) => setEditDob(e.target.value)}
                             disabled={!isEditingNameDob}
                             className="w-full mt-2 px-4 py-2 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                           />
@@ -308,8 +341,8 @@ export default function AccountPage() {
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</label>
                           <input
                             type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            value={isEditingEmail ? editEmail : email}
+                            onChange={(e) => setEditEmail(e.target.value)}
                             disabled={!isEditingEmail}
                             className="w-full mt-2 px-4 py-2 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                           />
@@ -341,8 +374,8 @@ export default function AccountPage() {
                           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Phone Number</label>
                           <input
                             type="tel"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            value={isEditingPhone ? editPhone : phone}
+                            onChange={(e) => setEditPhone(e.target.value)}
                             disabled={!isEditingPhone}
                             className="w-full mt-2 px-4 py-2 bg-input border border-border rounded-lg text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                           />
@@ -645,21 +678,11 @@ export default function AccountPage() {
 
                   <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase">First Name</label>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Full Name</label>
                       <input
                         type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        disabled={!isEditingNameDob}
-                        className="w-full mt-1 px-3 py-2 bg-input border border-border rounded-lg text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted-foreground uppercase">Last Name</label>
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
+                        value={isEditingNameDob ? editName : name}
+                        onChange={(e) => setEditName(e.target.value)}
                         disabled={!isEditingNameDob}
                         className="w-full mt-1 px-3 py-2 bg-input border border-border rounded-lg text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                       />
@@ -668,8 +691,8 @@ export default function AccountPage() {
                       <label className="text-xs font-semibold text-muted-foreground uppercase">Date of Birth</label>
                       <input
                         type="date"
-                        value={dob}
-                        onChange={(e) => setDob(e.target.value)}
+                        value={isEditingNameDob ? editDob : dob}
+                        onChange={(e) => setEditDob(e.target.value)}
                         disabled={!isEditingNameDob}
                         className="w-full mt-1 px-3 py-2 bg-input border border-border rounded-lg text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                       />
@@ -701,8 +724,8 @@ export default function AccountPage() {
                     <label className="text-xs font-semibold text-muted-foreground uppercase">Email</label>
                     <input
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={isEditingEmail ? editEmail : email}
+                      onChange={(e) => setEditEmail(e.target.value)}
                       disabled={!isEditingEmail}
                       className="w-full mt-1 px-3 py-2 bg-input border border-border rounded-lg text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                     />
@@ -732,8 +755,8 @@ export default function AccountPage() {
                     <label className="text-xs font-semibold text-muted-foreground uppercase">Phone</label>
                     <input
                       type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      value={isEditingPhone ? editPhone : phone}
+                      onChange={(e) => setEditPhone(e.target.value)}
                       disabled={!isEditingPhone}
                       className="w-full mt-1 px-3 py-2 bg-input border border-border rounded-lg text-sm text-foreground disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary"
                     />

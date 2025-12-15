@@ -75,6 +75,16 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleUserNotFoundException(UserNotFoundException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorResponse handleGlobalException(Exception ex) {

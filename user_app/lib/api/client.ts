@@ -1,20 +1,14 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { tokenManager } from './token';
-import type {
-  LoginRequest,
-  LoginResponse,
-  VerifyOtpRequest,
-  RefreshTokenRequest,
-  LogoutRequest,
-} from '@/types/auth.type';
+import { tokenManager } from '../token';
+import type { LoginResponse } from '@/types/auth.type';
 
 // Base URL from environment or default
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 /**
  * Create axios instance with default configuration
  */
-const apiClient: AxiosInstance = axios.create({
+export const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -163,42 +157,3 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-/**
- * Auth API service
- */
-export const authApi = {
-  /**
-   * Login or initiate registration
-   */
-  login: async (data: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/login', data);
-    return response.data;
-  },
-
-  /**
-   * Verify OTP and complete registration
-   */
-  verifyOtp: async (data: VerifyOtpRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/verify-otp', data);
-    return response.data;
-  },
-
-  /**
-   * Refresh access token
-   */
-  refreshToken: async (data: RefreshTokenRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/refresh', data);
-    return response.data;
-  },
-
-  /**
-   * Logout user
-   */
-  logout: async (data: LogoutRequest): Promise<{ message: string }> => {
-    const response = await apiClient.post('/auth/logout', data);
-    return response.data;
-  },
-};
-
-export default apiClient;

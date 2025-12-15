@@ -62,3 +62,11 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
+
+// Get user details response
+export interface GetUserDetailsResponse {
+  name: string;
+  email: string;
+  phone: string;
+  dob: string;
+}

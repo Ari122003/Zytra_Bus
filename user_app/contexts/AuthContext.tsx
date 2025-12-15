@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { tokenManager } from '@/lib/token';
-import { authApi } from '@/lib/api';
+import { authApi } from '@/lib/api/auth.api';
 import type { 
   User, 
   AuthState, 
