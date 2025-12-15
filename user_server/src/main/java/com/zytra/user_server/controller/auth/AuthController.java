@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.zytra.user_server.dto.request.LoginRequest;
-import com.zytra.user_server.dto.request.RefreshTokenRequest;
-import com.zytra.user_server.dto.request.VerifyOtpRequest;
-import com.zytra.user_server.dto.response.LoginResponse;
+import com.zytra.user_server.dto.request.auth.LoginRequest;
+import com.zytra.user_server.dto.request.auth.RefreshTokenRequest;
+import com.zytra.user_server.dto.request.auth.VerifyOtpRequest;
+import com.zytra.user_server.dto.response.auth.LoginResponse;
 import com.zytra.user_server.entity.RefreshTokenEntity;
 import com.zytra.user_server.entity.UserEntity;
 import com.zytra.user_server.exception.InvalidCredentialException;
@@ -75,7 +75,7 @@ public class AuthController {
         refreshTokenService.revokeToken(refreshToken);
         refreshTokenService.createRefreshToken(user, newRefreshToken, null, null);
 
-        return new LoginResponse("Token refreshed successfully", user.getStatus(),
+        return new LoginResponse("Token refreshed successfully", user.getStatus(), user.getId(),
                 newAccessToken, newRefreshToken, Long.valueOf(expiresIn));
     }
 

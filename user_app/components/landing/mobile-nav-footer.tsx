@@ -2,10 +2,10 @@
 
 import Link from "next/link"
 import { Ticket, Map, Settings, User, LogIn } from "lucide-react"
-import { useState } from "react"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function MobileNavFooter() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   const navItems = [
     { label: "Bookings", href: "#", icon: Ticket, id: "bookings" },
@@ -32,7 +32,7 @@ export default function MobileNavFooter() {
         {/* Auth Button - Account or Login based on state */}
         {isAuthenticated ? (
           <Link
-            href="#"
+            href="/account"
             className="flex flex-col items-center justify-center w-full h-full gap-1 text-foreground hover:text-primary transition-colors hover:bg-muted"
           >
             <User size={24} />
@@ -40,7 +40,7 @@ export default function MobileNavFooter() {
           </Link>
         ) : (
           <Link
-            href="#"
+            href="/login"
             className="flex flex-col items-center justify-center w-full h-full gap-1 text-foreground hover:text-primary transition-colors hover:bg-muted"
           >
             <LogIn size={24} />

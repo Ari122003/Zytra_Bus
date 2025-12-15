@@ -3,8 +3,8 @@ package com.zytra.user_server.service.impl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.zytra.user_server.dto.request.LoginRequest;
-import com.zytra.user_server.dto.response.LoginResponse;
+import com.zytra.user_server.dto.request.auth.LoginRequest;
+import com.zytra.user_server.dto.response.auth.LoginResponse;
 import com.zytra.user_server.entity.OtpEntity;
 import com.zytra.user_server.entity.UserEntity;
 import com.zytra.user_server.enums.UserStatus;
@@ -83,8 +83,8 @@ public class AuthServiceImpl implements AuthService {
                 user.setLastLoginAt(LocalDateTime.now());
                 userRepository.save(user);
 
-                return new LoginResponse("Login successful", UserStatus.ACTIVE, accessToken, refreshToken,
-                        Long.valueOf(expiresIn));
+                return new LoginResponse("Login successful", UserStatus.ACTIVE, user.getId(), accessToken,
+                        refreshToken, Long.valueOf(expiresIn));
             }
 
             if (status == UserStatus.BLOCKED || status == UserStatus.DELETED) {

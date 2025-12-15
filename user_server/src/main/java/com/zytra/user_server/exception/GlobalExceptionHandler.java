@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.zytra.user_server.dto.response.ErrorResponse;
+import com.zytra.user_server.dto.response.auth.ErrorResponse;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;

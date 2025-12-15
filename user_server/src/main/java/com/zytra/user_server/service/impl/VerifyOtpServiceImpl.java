@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
-import com.zytra.user_server.dto.request.VerifyOtpRequest;
-import com.zytra.user_server.dto.response.LoginResponse;
+import com.zytra.user_server.dto.request.auth.VerifyOtpRequest;
+import com.zytra.user_server.dto.response.auth.LoginResponse;
 import com.zytra.user_server.entity.OtpEntity;
 import com.zytra.user_server.entity.UserEntity;
 import com.zytra.user_server.enums.UserStatus;
@@ -86,7 +86,7 @@ public class VerifyOtpServiceImpl implements VerifyOtpService {
         String refreshToken = jwtUtil.generateRefreshToken(user);
         long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
 
-        return new LoginResponse("Login successful", UserStatus.ACTIVE, accessToken, refreshToken,
+        return new LoginResponse("Login successful", UserStatus.ACTIVE, user.getId(), accessToken, refreshToken,
                 expiresIn);
 
     }

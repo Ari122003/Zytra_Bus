@@ -1,4 +1,4 @@
-package com.zytra.user_server.dto.response;
+package com.zytra.user_server.dto.response.auth;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

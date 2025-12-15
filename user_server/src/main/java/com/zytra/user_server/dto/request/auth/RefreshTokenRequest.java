@@ -1,4 +1,4 @@
-package com.zytra.user_server.dto.request;
+package com.zytra.user_server.dto.request.auth;
 
 import jakarta.validation.constraints.NotBlank;
 

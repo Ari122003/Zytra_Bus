@@ -1,4 +1,4 @@
-package com.zytra.user_server.dto.response;
+package com.zytra.user_server.dto.response.auth;
 
 import com.zytra.user_server.enums.UserStatus;
 
@@ -8,6 +8,7 @@ import lombok.Getter;
 public class LoginResponse {
     private String message;
     private UserStatus status;
+    private Long userId;
     private String accessToken;
     private String refreshToken;
     private Long expiresIn; // seconds
@@ -17,9 +18,11 @@ public class LoginResponse {
         this.status = status;
     }
 
-    public LoginResponse(String message, UserStatus status, String accessToken, String refreshToken, Long expiresIn) {
+    public LoginResponse(String message, UserStatus status, Long userId, String accessToken, String refreshToken,
+            Long expiresIn) {
         this.message = message;
         this.status = status;
+        this.userId = userId;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.expiresIn = expiresIn;

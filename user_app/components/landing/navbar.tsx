@@ -5,12 +5,11 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Menu, X, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
+import { useAuth } from "@/hooks/useAuth"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [userName] = useState("John Doe")
+  const { isAuthenticated, user, logout } = useAuth()
   const router = useRouter()
   
 
@@ -45,16 +44,20 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop auth button showing single option based on state */}
+          {/* Desktop auth: avatar when authenticated, login otherwise */}
           <div className="hidden md:block">
             {isAuthenticated ? (
-              <Button
-                onClick={() => setIsAuthenticated(false)}
-                className="bg-primary hover:bg-primary/90 text-white gap-2"
+              <button
+                aria-label="Account"
+                onClick={() => router.push("/account")}
+                className="inline-flex items-center focus:outline-none"
               >
-                <User size={16} />
-                {userName}
-              </Button>
+                <img
+                  src={`https://i.pravatar.cc/48?u=${user?.email || 'zytra-user'}`}
+                  alt="User avatar"
+                  className="w-9 h-9 rounded-full border border-muted-foreground/20 shadow-sm"
+                />
+              </button>
             ) : (
               <Button onClick={() => router.push("/login")} className="bg-primary hover:bg-primary/90 text-white gap-2">
                 <User size={16} />
@@ -84,13 +87,26 @@ export default function Navbar() {
               </Link>
             ))}
             {isAuthenticated ? (
-              <Button
-                onClick={() => setIsAuthenticated(false)}
-                className="w-full bg-primary hover:bg-primary/90 text-white gap-2"
-              >
-                <LogOut size={16} />
-                Logout ({userName})
-              </Button>
+              <div className="space-y-2 px-4">
+                <button
+                  aria-label="Account"
+                  onClick={() => {
+                    setIsOpen(false)
+                    router.push("/account")
+                  }}
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted"
+                >
+                  <img
+                    src={`https://i.pravatar.cc/64?u=${user?.email || 'zytra-user'}`}
+                    alt="User avatar"
+                    className="w-10 h-10 rounded-full border border-muted-foreground/20"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{user?.name || 'Account'}</span>
+                    <span className="text-xs text-muted-foreground">Tap to view account</span>
+                  </div>
+                </button>
+              </div>
             ) : (
               <Button onClick={() => router.push("/login")} className="w-full bg-primary hover:bg-primary/90 text-white gap-2">
                 <User size={16} />
