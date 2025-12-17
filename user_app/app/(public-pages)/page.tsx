@@ -5,6 +5,7 @@ import MobileNavFooter from "@/components/landing/mobile-nav-footer";
 import Navbar from "@/components/landing/navbar";
 
 export default function Home() {
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Desktop navbar */}

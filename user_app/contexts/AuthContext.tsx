@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { useRouter } from 'next/navigation';
 import { tokenManager } from '@/lib/token';
 import { authApi } from '@/lib/api/auth.api';
+import { userApi } from '@/lib/api/user.api';
+import { useUserProfile } from './UserContext';
 import type { 
   User, 
   AuthState, 
@@ -27,6 +29,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
+  const { setUserProfile, clearUserProfile } = useUserProfile();
   
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
@@ -57,6 +60,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAuthenticated: true,
           isLoading: false,
         });
+        
+        // Load user profile from localStorage if available
+        try {
+          const storedProfile = localStorage.getItem('user_profile');
+          if (storedProfile) {
+            setUserProfile(JSON.parse(storedProfile));
+          }
+        } catch (error) {
+          console.error('Failed to load stored user profile:', error);
+        }
       }
     } else {
       setAuthState({
@@ -150,13 +163,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAuthenticated: true,
           isLoading: false,
         });
+
+        // Set a minimal profile immediately for UI, then hydrate with full details
+        if (response.userId) {
+          setUserProfile({
+            id: response.userId,
+            email: data.email,
+            name: '',
+            phone: '',
+            dob: '',
+            imageUrl: '/dummy.png',
+          });
+
+          // Call getUserDetails inside the login method when userId is available
+          try {
+            const details = await userApi.getUserDetails(response.userId);
+            setUserProfile({
+              id: response.userId,
+              ...details,
+              imageUrl: details.imageUrl || '/dummy.png',
+            });
+          } catch (e) {
+            console.error('Failed to fetch user details after login:', e);
+          }
+        }
       }
 
       return response;
     } catch (error) {
       throw error;
     }
-  }, []);
+  }, [setUserProfile]);
 
   /**
    * Verify OTP and complete registration
@@ -186,13 +223,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoading: false,
         });
 
+        // Update global user profile with registration data
+        if (response.userId) {
+          setUserProfile({
+            id: response.userId,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            dob: data.dob,
+            imageUrl: '/dummy.png',
+          });
+        }
+
         // Redirect to home or dashboard
         router.push('/');
       }
     } catch (error) {
       throw error;
     }
-  }, [router]);
+  }, [router, setUserProfile]);
 
   /**
    * Logout function
@@ -208,6 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Logout error:', error);
     } finally {
       tokenManager.clearAuth();
+      clearUserProfile();
       
       setAuthState({
         user: null,
@@ -219,7 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       router.push('/login');
     }
-  }, [router]);
+  }, [router, clearUserProfile]);
 
   /**
    * Check auth on mount and set up token refresh interval

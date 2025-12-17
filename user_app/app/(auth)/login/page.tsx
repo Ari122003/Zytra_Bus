@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
@@ -23,6 +23,9 @@ export default function LoginPage() {
   const [apiError, setApiError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+
+ 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -44,10 +47,9 @@ export default function LoginPage() {
         sessionStorage.setItem("verificationPassword", password);
         router.push("/verify");
       } else if (response.status === 'ACTIVE') {
-        // Existing user - successfully logged in
-        const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+        // Existing user - successfully logged in; always go to home
         sessionStorage.removeItem('redirectAfterLogin');
-        router.push(redirectUrl || '/');
+        router.push('/');
       } else if (response.status === 'BLOCKED') {
         setApiError("Your account has been blocked. Please contact support.");
       }

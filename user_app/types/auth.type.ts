@@ -51,9 +51,9 @@ export interface User {
   id: number | null;
   email: string;
   name?: string;
+  imageUrl?: string;
   status: UserStatus;
 }
-
 // Auth state
 export interface AuthState {
   user: User | null;
@@ -63,10 +63,5 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-// Get user details response
-export interface GetUserDetailsResponse {
-  name: string;
-  email: string;
-  phone: string;
-  dob: string;
-}
+
+

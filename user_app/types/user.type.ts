@@ -3,4 +3,5 @@ export interface GetUserDetailsResponse {
     email: string;
     dob: string;
     phone: string;
+    imageUrl?: string;
 }

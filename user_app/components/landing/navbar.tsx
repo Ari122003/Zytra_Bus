@@ -1,20 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Menu, X, User, LogOut } from "lucide-react"
+import { useRouter, usePathname } from "next/navigation"
+import { Menu, X, User, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
+import { useUserProfile } from "@/contexts/UserContext"
+import Image from "next/image"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const { isAuthenticated, user, logout } = useAuth()
+  const { isAuthenticated } = useAuth()
+  const { userProfile } = useUserProfile()
   const router = useRouter()
-  
+  const pathname = usePathname()
+
+  // Avatar reads from UserContext; AuthContext hydrates after login
 
   const navLinks = [
-    { label: "Book Buses", href: "#" },
+    { label: "Book Buses", href: "/" },
     { label: "Routes", href: "#" },
     { label: "Services", href: "#" },
   ]
@@ -33,6 +38,15 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
+            {pathname !== "/" && (
+              <Link
+                href="/"
+                className="text-foreground hover:text-primary transition-colors font-medium flex items-center gap-2"
+              >
+                <Home size={18} />
+                Home
+              </Link>
+            )}
             {navLinks.map((link) => (
               <Link
                 key={link.label}
@@ -52,11 +66,13 @@ export default function Navbar() {
                 onClick={() => router.push("/account")}
                 className="inline-flex items-center focus:outline-none"
               >
-                <img
-                  src={`https://i.pravatar.cc/48?u=${user?.email || 'zytra-user'}`}
-                  alt="User avatar"
-                  className="w-9 h-9 rounded-full border border-muted-foreground/20 shadow-sm"
-                />
+               <Image
+                        src={userProfile?.imageUrl || '/dummy.png'}
+                        alt="User avatar"
+                        width={36}
+                        height={24}
+                        className="rounded-full border border-muted-foreground/20 shadow-sm"
+                      />
               </button>
             ) : (
               <Button onClick={() => router.push("/login")} className="bg-primary hover:bg-primary/90 text-white gap-2">
@@ -77,6 +93,16 @@ export default function Navbar() {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden pb-4 space-y-2">
+            {pathname !== "/" && (
+              <Link
+                href="/"
+                className="flex items-center gap-2 px-4 py-2 text-foreground hover:bg-muted rounded-lg transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Home size={18} />
+                Home
+              </Link>
+            )}
             {navLinks.map((link) => (
               <Link
                 key={link.label}
@@ -96,13 +122,15 @@ export default function Navbar() {
                   }}
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted"
                 >
-                  <img
-                    src={`https://i.pravatar.cc/64?u=${user?.email || 'zytra-user'}`}
+                  <Image
+                    src={userProfile?.imageUrl || '/dummy.png'}
                     alt="User avatar"
-                    className="w-10 h-10 rounded-full border border-muted-foreground/20"
+                    width={40}
+                    height={40}
+                    className="rounded-full border border-muted-foreground/20"
                   />
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">{user?.name || 'Account'}</span>
+                    <span className="text-sm font-medium">{userProfile?.name || 'Account'}</span>
                     <span className="text-xs text-muted-foreground">Tap to view account</span>
                   </div>
                 </button>

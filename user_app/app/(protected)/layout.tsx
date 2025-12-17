@@ -12,7 +12,7 @@ export default function ProtectedLayout({
       <div className="flex flex-col min-h-screen">
         {/* Desktop navbar */}
         <div className="hidden md:block">
-          <Navbar />
+          <Navbar/>
         </div>
         <main className="grow pb-20 md:pb-0">
           {children}

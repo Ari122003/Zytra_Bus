@@ -1,8 +1,15 @@
 import { jwtDecode } from 'jwt-decode';
 
-const TOKEN_KEY = 'auth_access_token';
-const REFRESH_TOKEN_KEY = 'auth_refresh_token';
-const USER_KEY = 'auth_user';
+export const TOKEN_KEY = 'auth_access_token';
+export const REFRESH_TOKEN_KEY = 'auth_refresh_token';
+export const USER_KEY = 'auth_user';
+
+export const storageKeys = {
+  TOKEN: TOKEN_KEY,
+  REFRESH_TOKEN: REFRESH_TOKEN_KEY,
+  USER: USER_KEY,
+  USER_PROFILE: 'user_profile',
+} as const;
 
 interface DecodedToken {
   exp: number;
@@ -56,7 +63,7 @@ export const tokenManager = {
   /**
    * Store user data
    */
-  setUser: (user: Record<string, unknown> | { id: number | null; email: string; name?: string; status: string }): void => {
+  setUser: (user: Record<string, unknown> | { id: number | null; email: string; name?: string; imageUrl?: string; status: string }): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(USER_KEY, JSON.stringify(user));
     }

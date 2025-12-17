@@ -1,6 +1,6 @@
 package com.zytra.user_server.util;
 
-import com.zytra.user_server.entity.UserEntity;
+import com.zytra.user_server.user.entity.UserEntity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
