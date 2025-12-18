@@ -1,6 +1,7 @@
 package com.zytra.user_server.user.service.impl;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.zytra.user_server.user.dto.request.UpdateInfoRequest;
 import com.zytra.user_server.user.dto.response.GetUserDetailsResponse;
@@ -13,6 +14,7 @@ import com.zytra.user_server.user.repository.UserRepository;
 import com.zytra.user_server.user.service.UserService;
 
 @Service
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -24,6 +26,7 @@ public class UserServiceImpl implements UserService {
     // Get user information
 
     @Override
+    @Transactional(readOnly = true)
     public GetUserDetailsResponse getUserDetails(Long userId) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
@@ -45,6 +48,7 @@ public class UserServiceImpl implements UserService {
     // update user image
 
     @Override
+    @Transactional
     public UpdateUserImageResponse updateUserImage(Long userId, String imageUrl) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
@@ -64,6 +68,7 @@ public class UserServiceImpl implements UserService {
     // update user info (name and dob)
 
     @Override
+    @Transactional
     public UpdateInfoResponse updateUserInfo(Long userId, UpdateInfoRequest request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
