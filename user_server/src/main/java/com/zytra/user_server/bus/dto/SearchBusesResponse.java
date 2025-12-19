@@ -15,7 +15,7 @@ import java.util.List;
 @Builder
 public class SearchBusesResponse {
 
-    private List<BusResult> buses = new ArrayList<>();
+    private List<BusResult> results = new ArrayList<>();
 
     @Getter
     @Setter
@@ -25,6 +25,7 @@ public class SearchBusesResponse {
     public static class BusResult {
         private Long tripId;
         private String busNumber;
+        private String busDescription;
         private String source;
         private String destination;
         private LocalDate travelDate;

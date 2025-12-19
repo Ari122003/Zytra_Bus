@@ -10,4 +10,6 @@ public interface RouteRepository extends JpaRepository<RouteEntity, Long> {
 
     Optional<RouteEntity> findBySourceAndDestination(String source, String destination);
 
+    Optional<RouteEntity> findBySourceIgnoreCaseAndDestinationIgnoreCase(String source, String destination);
+
 }

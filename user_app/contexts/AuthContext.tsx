@@ -42,16 +42,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Initialize auth state from stored tokens
    */
-  const checkAuth = useCallback(() => {
+  const checkAuth = useCallback(async () => {
     const accessToken = tokenManager.getAccessToken();
     const refreshToken = tokenManager.getRefreshToken();
     const user = tokenManager.getUser() as User | null;
 
-    if (accessToken && refreshToken && user) {
-      // Check if token is expired
-      if (tokenManager.isTokenExpired(accessToken)) {
-        // Token expired, try to refresh
-        refreshAuth();
+    if (refreshToken && user) {
+      // Check if access token is expired or missing
+      if (!accessToken || tokenManager.isTokenExpired(accessToken)) {
+        // Token expired or missing, try to refresh
+        // Keep isLoading true while refreshing
+        await refreshAuth();
       } else {
         setAuthState({
           user,
@@ -117,6 +118,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isAuthenticated: true,
           isLoading: false,
         });
+
+        // Load user profile from localStorage if available
+        try {
+          const storedProfile = localStorage.getItem('user_profile');
+          if (storedProfile) {
+            setUserProfile(JSON.parse(storedProfile));
+          }
+        } catch (error) {
+          console.error('Failed to load stored user profile:', error);
+        }
+      } else {
+        // Response didn't contain tokens, logout
+        tokenManager.clearAuth();
+        setAuthState({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
       }
     } catch (error) {
       console.error('Failed to refresh token:', error);
@@ -129,7 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: false,
       });
     }
-  }, []);
+  }, [setUserProfile]);
 
   /**
    * Login function
@@ -276,19 +297,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   useEffect(() => {
     checkAuth();
+  }, [checkAuth]);
 
-    // Set up interval to check token expiry
+  /**
+   * Set up proactive token refresh interval
+   * This runs separately to proactively refresh tokens before they expire
+   */
+  useEffect(() => {
+    // Only set up interval if user is authenticated
+    if (!authState.isAuthenticated) {
+      return;
+    }
+
+    // Set up interval to check token expiry - check every 30 seconds
     const interval = setInterval(() => {
       const accessToken = tokenManager.getAccessToken();
       
-      if (accessToken && tokenManager.willExpireSoon(accessToken, 120)) {
-        // Token will expire in 2 minutes, refresh it
+      if (accessToken && tokenManager.willExpireSoon(accessToken, 180)) {
+        // Token will expire in 3 minutes, refresh it proactively
         refreshAuth();
       }
-    }, 60000); // Check every minute
+    }, 30000); // Check every 30 seconds
 
     return () => clearInterval(interval);
-  }, [checkAuth, refreshAuth]);
+  }, [authState.isAuthenticated, refreshAuth]);
 
   const value: AuthContextType = {
     ...authState,

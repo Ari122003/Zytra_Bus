@@ -19,21 +19,11 @@ export default function SearchSection({
   onSearch 
 }: SearchSectionProps) {
   const cities = [
-    "New York",
-    "Boston",
-    "Philadelphia",
-    "Washington DC",
-    "Los Angeles",
-    "San Francisco",
-    "Chicago",
-    "Miami",
-    "Atlanta",
-    "Denver",
-    "Seattle",
-    "Austin",
-    "Nashville",
-    "Portland",
-    "Las Vegas",
+    "Kolkata",
+    "Digha",
+    "New Jalpaiguri",
+    "Mayapur",
+    "Shantiniketan",
   ]
 
   const [from, setFrom] = useState<string>(initialFrom)
@@ -41,6 +31,8 @@ export default function SearchSection({
   const [date, setDate] = useState<string>(initialDate)
   const [fromSuggestions, setFromSuggestions] = useState<string[]>([])
   const [toSuggestions, setToSuggestions] = useState<string[]>([])
+  const [isSearching, setIsSearching] = useState<boolean>(false)
+  const [dateError, setDateError] = useState<string>('')
   const [showFromSuggestions, setShowFromSuggestions] = useState<boolean>(false)
   const [showToSuggestions, setShowToSuggestions] = useState<boolean>(false)
 
@@ -86,12 +78,47 @@ export default function SearchSection({
     setTo(temp)
   }
 
+  /**
+   * Check if the selected date is before today
+   */
+  const isDateBeforeToday = (selectedDate: string): boolean => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset time to start of day
+    const selected = new Date(selectedDate)
+    return selected < today
+  }
+
+  /**
+   * Handle date change with validation
+   */
+  const handleDateChange = (value: string) => {
+    setDate(value)
+    if (value && isDateBeforeToday(value)) {
+      setDateError('Travel date cannot be in the past')
+    } else {
+      setDateError('')
+    }
+  }
+
   const handleSearch = () => {
+    if (isSearching) return; // Prevent multiple clicks
+    
+    // Validate date before searching
+    if (isDateBeforeToday(date)) {
+      setDateError('Travel date cannot be in the past')
+      return
+    }
+    
+    setIsSearching(true)
+    
     if (onSearch) {
       onSearch(from, to, date)
     } else {
       router.push(`/results?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`)
     }
+    
+    // Reset after a short delay to allow navigation
+    setTimeout(() => setIsSearching(false), 1000)
   }
 
   return (
@@ -172,20 +199,39 @@ export default function SearchSection({
         <div>
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</label>
           <div className="flex items-center gap-2 mt-2">
-            <Calendar size={18} className="text-primary" />
+            <Calendar size={18} className={dateError ? "text-destructive" : "text-primary"} />
             <input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-input border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              onChange={(e) => handleDateChange(e.target.value)}
+              min={new Date().toISOString().split('T')[0]} // Prevent selecting past dates
+              className={`w-full bg-input border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:ring-2 ${
+                dateError 
+                  ? 'border-destructive focus:ring-destructive' 
+                  : 'border-border focus:ring-primary'
+              }`}
             />
           </div>
+          {dateError && (
+            <p className="text-destructive text-sm mt-1">{dateError}</p>
+          )}
         </div>
 
         {/* Search Button - Below Date */}
         <div className="flex justify-center">
-          <Button onClick={handleSearch} className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-2 text-lg font-semibold">
-            Search Buses
+          <Button 
+            onClick={handleSearch} 
+            disabled={isSearching || !from.trim() || !to.trim() || !date || !!dateError}
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-white px-8 py-2 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSearching ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Searching...
+              </span>
+            ) : (
+              'Search Buses'
+            )}
           </Button>
         </div>
       </div>

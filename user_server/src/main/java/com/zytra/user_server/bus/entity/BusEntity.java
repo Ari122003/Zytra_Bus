@@ -31,6 +31,9 @@ public class BusEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "description", length = 255, nullable = false)
+    private String description;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
