@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { SearchBusesResponse, SearchBusRequest } from '@/types/bus.type';
+import type { SearchBusesResponse, SearchBusRequest, TripDetailsResponse } from '@/types/bus.type';
 
 /**
  * Bus API service
@@ -30,6 +30,16 @@ export const busApi = {
     const response = await apiClient.get<SearchBusesResponse>(
       `/buses/search?${queryParams.toString()}`
     );
+    return response.data;
+  },
+
+  /**
+   * Get trip details by trip ID
+   * @param tripId - The trip ID to fetch details for
+   * @returns Promise with trip details including seats
+   */
+  getTripDetails: async (tripId: number): Promise<TripDetailsResponse> => {
+    const response = await apiClient.get<TripDetailsResponse>(`/trips/${tripId}`);
     return response.data;
   },
 };

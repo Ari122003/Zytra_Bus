@@ -11,6 +11,11 @@ import com.zytra.user_server.auth.dto.response.ErrorResponse;
 import com.zytra.user_server.auth.exception.InvalidCredentialException;
 import com.zytra.user_server.auth.exception.InvalidOtpException;
 import com.zytra.user_server.auth.exception.InvalidUserException;
+import com.zytra.user_server.bus.exception.InvalidTravelDateException;
+import com.zytra.user_server.bus.exception.NoBusAvailableException;
+import com.zytra.user_server.bus.exception.RouteNotFoundException;
+import com.zytra.user_server.trips.exception.TripCancelledException;
+import com.zytra.user_server.trips.exception.TripNotFoundException;
 import com.zytra.user_server.user.exception.UserNotFoundException;
 
 import java.time.LocalDateTime;
@@ -82,6 +87,56 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(UserNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleUserNotFoundException(UserNotFoundException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(TripNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleTripNotFoundException(TripNotFoundException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(TripCancelledException.class)
+    @ResponseStatus(HttpStatus.GONE)
+    public ErrorResponse handleTripCancelledException(TripCancelledException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.GONE.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(InvalidTravelDateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidTravelDateException(InvalidTravelDateException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(RouteNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleRouteNotFoundException(RouteNotFoundException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(NoBusAvailableException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleNoBusAvailableException(NoBusAvailableException ex) {
         return ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())

@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.zytra.user_server.bus.dto.SearchBusesResponse;
 import com.zytra.user_server.bus.entity.BusEntity;
+import com.zytra.user_server.bus.exception.InvalidTravelDateException;
+import com.zytra.user_server.bus.exception.NoBusAvailableException;
+import com.zytra.user_server.bus.exception.RouteNotFoundException;
 import com.zytra.user_server.bus.repository.BusRepository;
 import com.zytra.user_server.bus.service.BusService;
 import com.zytra.user_server.enums.ScheduleStatus;
@@ -58,17 +61,18 @@ public class BusServiceImpl implements BusService {
         LocalDate today = LocalDate.now();
 
         if (travelDate.isBefore(today)) {
-            throw new IllegalArgumentException("Travel date cannot be in the past");
+            throw new InvalidTravelDateException("Travel date cannot be in the past");
         }
 
         if (travelDate.isAfter(today.plusDays(bookingWindowDays))) {
-            throw new IllegalArgumentException("Book before " + bookingWindowDays + " days");
+            throw new InvalidTravelDateException(
+                    "Booking allowed only up to " + bookingWindowDays + " days in advance");
         }
 
         // Case-insensitive search for route
         RouteEntity route = routeRepository.findBySourceIgnoreCaseAndDestinationIgnoreCase(
                 source.trim(), destination.trim())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new RouteNotFoundException(
                         "No route found from " + source + " to " + destination));
 
         // Fetch schedules with bus eagerly loaded to avoid N+1 queries
@@ -77,8 +81,8 @@ public class BusServiceImpl implements BusService {
                 .orElse(List.of());
 
         if (schedules.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "No bus found for route from " + source + " to " + destination);
+            throw new NoBusAvailableException(
+                    "No bus available for route from " + source + " to " + destination);
         }
 
         // Filter by departure time if travel date is today

@@ -5,6 +5,7 @@ import SearchSection from "@/components/landing/search-section"
 import { Users, Clock, Bus as BusIcon, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSearchBuses } from "@/hooks"
+import { getErrorMessage } from "@/lib/utils"
 import type { BusResult } from "@/types/bus.type"
 
 /**
@@ -106,7 +107,7 @@ export default function Results() {
             <AlertCircle className="h-12 w-12 text-destructive mb-4" />
             <p className="text-lg text-foreground font-medium mb-2">Failed to load buses</p>
             <p className="text-sm text-muted-foreground mb-4">
-              {error?.message || 'An error occurred while searching for buses.'}
+              {getErrorMessage(error, 'An error occurred while searching for buses.')}
             </p>
             <Button onClick={() => refetch()} variant="outline">
               Try Again
@@ -182,6 +183,9 @@ export default function Results() {
                       <Button 
                         className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2"
                         disabled={bus.availableSeats === 0}
+                        onClick = {() => {
+                          router.push(`/booking?tripId=${bus.tripId}`);
+                        }}
                       >
                         {bus.availableSeats > 0 ? 'Select' : 'Sold Out'}
                       </Button>

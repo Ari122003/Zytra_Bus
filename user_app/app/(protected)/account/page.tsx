@@ -2,10 +2,9 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/contexts/UserContext";
-import { userApi } from "@/lib/api/user.api";
+import { useUserDetails, useUpdateProfileImage, useUpdateUserInfo } from "@/hooks";
 import { ErrorCard } from "@/components/ui/error-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +26,6 @@ export default function AccountPage() {
 	const { user, logout: authLogout } = useAuth();
 	const { userProfile, setUserProfile, updateUserProfile } = useUserProfile();
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const queryClient = useQueryClient();
 
 	const [editName, setEditName] = useState("");
 	const [editDob, setEditDob] = useState("");
@@ -36,39 +34,21 @@ export default function AccountPage() {
 	const [isEditingPhone, setIsEditingPhone] = useState(false);
 	const [imageUpdateError, setImageUpdateError] = useState<string | null>(null);
 
-	// Fetch user details with React Query
+	// Fetch user details with React Query hook
 	const {
 		data: userDetails,
 		isLoading,
 		isError,
 		error,
 		refetch,
-	} = useQuery({
-		queryKey: ["userDetails", user?.id],
-		queryFn: () => userApi.getUserDetails(user!.id!),
-		enabled: !!user?.id,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		refetchOnMount: "always",
-		refetchOnReconnect: true,
-		refetchOnWindowFocus: true,
-	});
+	} = useUserDetails(user?.id);
 
 	// Mutation for updating profile image
 	const { mutate: updateProfileImageMutation, isPending: isUpdatingImage } =
-		useMutation({
-			mutationFn: (imageUrl: string) =>
-				userApi.updateProfileImage(user!.id!, imageUrl),
+		useUpdateProfileImage(user?.id, {
 			onSuccess: (_response, imageData) => {
-				// API returns message only; use the uploaded data for local preview/state
+				// Update local profile state
 				updateUserProfile({ imageUrl: imageData });
-				// Update React Query cache and invalidate to keep it fresh across navigation
-				if (user?.id) {
-					queryClient.setQueryData(["userDetails", user.id], (prev: Record<string, unknown> | undefined) => ({
-						...(prev || {}),
-						imageUrl: imageData,
-					}));
-					queryClient.invalidateQueries({ queryKey: ["userDetails", user.id] });
-				}
 				setImageUpdateError(null);
 				// Reset file input so same file can be selected again
 				if (fileInputRef.current) {
@@ -91,21 +71,10 @@ export default function AccountPage() {
 
 	// Mutation for updating user info (name and DOB)
 	const { mutate: updateUserInfoMutation, isPending: isUpdatingUserInfo } =
-		useMutation({
-			mutationFn: (data: { name: string; dob: string }) =>
-				userApi.updateUserInfo(user!.id!, data),
+		useUpdateUserInfo(user?.id, {
 			onSuccess: (_response, { name, dob }) => {
 				// Sync to userProfile on success
 				updateUserProfile({ name, dob });
-				// Update React Query cache
-				if (user?.id) {
-					queryClient.setQueryData(["userDetails", user.id], (prev: Record<string, unknown> | undefined) => ({
-						...(prev || {}),
-						name,
-						dob,
-					}));
-					queryClient.invalidateQueries({ queryKey: ["userDetails", user.id] });
-				}
 				setIsEditingNameDob(false);
 			},
 			onError: (error) => {
