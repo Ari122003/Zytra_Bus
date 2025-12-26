@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { busApi } from '@/lib/api/bus.api';
-import type { SearchBusRequest, SearchBusesResponse, TripDetailsResponse } from '@/types/bus.type';
+import type { SearchBusRequest, SearchBusesResponse, TripDetailsResponse, LockSeatsRequest, LockSeatsResponse } from '@/types/bus.type';
 
 /**
  * Query keys for bus-related queries
@@ -43,6 +43,19 @@ export const useTripDetails = (
     queryFn: () => busApi.getTripDetails(tripId!),
     enabled: enabled && !!tripId,
     staleTime: 1000 * 60 * 2, // Consider data stale after 2 minutes (seats can change quickly)
+    // Do not always refetch on mount; rely on cache within staleTime window
+    // This avoids extra "get trip details" calls when navigating back to the booking page.
+    refetchOnMount: false,
     retry: 2,
+  });
+};
+
+/**
+ * Hook to lock seats for booking
+ * Temporarily locks selected seats for 10 minutes
+ */
+export const useLockSeats = () => {
+  return useMutation<LockSeatsResponse, Error, LockSeatsRequest>({
+    mutationFn: (request: LockSeatsRequest) => busApi.lockSeats(request),
   });
 };

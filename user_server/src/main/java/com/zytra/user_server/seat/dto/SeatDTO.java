@@ -1,5 +1,8 @@
 package com.zytra.user_server.seat.dto;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import com.zytra.user_server.enums.SeatStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +17,8 @@ import lombok.Setter;
 @Builder
 public class SeatDTO {
     private String seatNumber;
-    private SeatStatus status;
-    private String row; // e.g., "A", "B", "C"
-    private int column; // e.g., 1, 2, 3, 4
+    private Long lockOwner;
+    private LocalDateTime lockedUntil;
+    private boolean isBooked;
+
 }

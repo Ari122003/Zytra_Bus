@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.zytra.user_server.enums.TripSeatStatus;
 import com.zytra.user_server.trips.entity.TripEntity;
 
 @Repository
@@ -42,5 +43,14 @@ public interface TripRepository extends JpaRepository<TripEntity, Long> {
         List<TripEntity> findByScheduleIdInAndTravelDate(
                         @Param("scheduleIds") Set<Long> scheduleIds,
                         @Param("travelDate") LocalDate travelDate);
+
+        @Query("""
+                            SELECT t FROM TripEntity t
+                            WHERE t.seatStatus = :status
+                              AND t.travelDate >= :today
+                        """)
+        List<TripEntity> findTripsNeedingSeatInitialization(
+                        @Param("status") TripSeatStatus status,
+                        @Param("today") LocalDate today);
 
 }

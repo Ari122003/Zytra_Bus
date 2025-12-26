@@ -30,6 +30,7 @@ import com.zytra.user_server.schedule.entity.ScheduleEntity;
 import com.zytra.user_server.schedule.repository.ScheduleRepository;
 import com.zytra.user_server.trips.entity.TripEntity;
 import com.zytra.user_server.trips.repository.TripRepository;
+import com.zytra.user_server.trips.service.TripCreationService;
 
 @Service
 public class BusServiceImpl implements BusService {
@@ -38,13 +39,15 @@ public class BusServiceImpl implements BusService {
     ScheduleRepository scheduleRepository;
     BusRepository busRepository;
     TripRepository tripRepository;
+    TripCreationService tripCreationService;
 
     public BusServiceImpl(RouteRepository routeRepository, ScheduleRepository scheduleRepository,
-            BusRepository busRepository, TripRepository tripRepository) {
+            BusRepository busRepository, TripRepository tripRepository, TripCreationService tripCreationService) {
         this.routeRepository = routeRepository;
         this.scheduleRepository = scheduleRepository;
         this.busRepository = busRepository;
         this.tripRepository = tripRepository;
+        this.tripCreationService = tripCreationService;
     }
 
     @Value("${booking.window.days}")
@@ -122,15 +125,10 @@ public class BusServiceImpl implements BusService {
             if (trip != null) {
                 trips.add(trip);
             } else {
-                TripEntity newTrip = TripEntity.builder()
-                        .schedule(schedule)
-                        .travelDate(travelDate)
-                        .availableSeats(schedule.getBus().getTotalSeats())
-                        .fare(calculatedFare)
-                        .status(TripStatus.ACTIVE)
-                        .build();
-
-                newTripsToSave.add(newTrip);
+                TripEntity newTrip = tripCreationService.createTripWithSeats(
+                        schedule,
+                        travelDate,
+                        calculatedFare);
                 trips.add(newTrip);
             }
         }

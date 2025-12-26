@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useTripDetails } from "@/hooks"
+import { useTripDetails, useLockSeats } from "@/hooks"
+import { useUserProfile } from "@/contexts/UserContext"
 import { Button } from "@/components/ui/button"
 import { getErrorMessage } from "@/lib/utils"
 import type { Seat } from "@/types/bus.type"
@@ -14,6 +15,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  X,
 } from "lucide-react"
 
 /**
@@ -50,7 +52,7 @@ const formatDate = (dateStr: string): string => {
 
 /**
  * Seat component for rendering individual seat buttons
- * All seats in the matrix are available seats from the API
+ * Handles available, selected, and unavailable states
  */
 const SeatButton: React.FC<{
   seat: Seat
@@ -59,8 +61,23 @@ const SeatButton: React.FC<{
   fare: number
 }> = ({ seat, isSelected, onSelect, fare }) => {
   const baseClasses = "w-10 h-10 md:w-12 md:h-12 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center"
-  const price = seat.price || fare
+  const price =  fare
+  const isAvailable = !seat.status || seat.status === 'AVAILABLE'
 
+  // Unavailable seat (BOOKED, LOCKED, or UNAVAILABLE)
+  if (!isAvailable) {
+    return (
+      <button
+        disabled
+        className={`${baseClasses} bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed`}
+        title={`Seat ${seat.seatNumber} - Not Available`}
+      >
+        {seat.seatNumber}
+      </button>
+    )
+  }
+
+  // Selected seat
   if (isSelected) {
     return (
       <button
@@ -73,6 +90,7 @@ const SeatButton: React.FC<{
     )
   }
 
+  // Available seat
   return (
     <button
       onClick={() => onSelect(seat.seatNumber)}
@@ -93,9 +111,48 @@ export default function BookingPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tripId = searchParams.get("tripId")
-  
-  const [selectedSeats, setSelectedSeats] = useState<string[]>([])
+
+  // Key for persisting selected seats per trip in sessionStorage
+  const storageKey = tripId ? `booking_selectedSeats_${tripId}` : null
+
+  const [selectedSeats, setSelectedSeats] = useState<string[]>(() => {
+    // Initialize from URL first (if seats are passed back), then from sessionStorage
+    if (typeof window === 'undefined') return []
+
+    const seatsParam = searchParams.get("seats")
+    if (seatsParam) {
+      return seatsParam.split(',').filter(Boolean)
+    }
+
+    if (tripId) {
+      try {
+        const stored = sessionStorage.getItem(`booking_selectedSeats_${tripId}`)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (Array.isArray(parsed)) {
+            return parsed
+          }
+        }
+      } catch {
+        // ignore parse errors and fall back to empty selection
+      }
+    }
+
+    return []
+  })
   const [showTripDetails, setShowTripDetails] = useState(true)
+  const [lockError, setLockError] = useState<string | null>(null)
+
+  // Persist selected seats in sessionStorage so that going to payment
+  // and then coming back (or soft refreshes) retains the previous selection.
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(selectedSeats))
+    } catch {
+      // Ignore storage errors (e.g., quota exceeded)
+    }
+  }, [selectedSeats, storageKey])
 
   // Fetch trip details
   const {
@@ -105,6 +162,10 @@ export default function BookingPage() {
     error,
     refetch,
   } = useTripDetails(tripId ? parseInt(tripId) : null)
+
+  // Lock seats mutation
+  const lockSeatsMutation = useLockSeats()
+  const { userProfile } = useUserProfile()
 
   // Get seat matrix from API response
   const seatMatrix = useMemo(() => {
@@ -132,13 +193,33 @@ export default function BookingPage() {
   const totalAmount = useMemo(() => {
     return selectedSeats.reduce((total, seatNumber) => {
       const seat = allSeats.find(s => s.seatNumber === seatNumber)
-      return total + (seat?.price || tripDetails?.fare || 0)
+      return total + ( tripDetails?.fare || 0)
     }, 0)
   }, [selectedSeats, allSeats, tripDetails?.fare])
 
-  const handleProceedToPayment = () => {
-    if (selectedSeats.length === 0) return
-    router.push(`/payment?tripId=${tripId}&seats=${selectedSeats.join(',')}`)
+  const handleProceedToPayment = async () => {
+    if (selectedSeats.length === 0 || !tripId) return
+    
+    // Clear any previous error
+    setLockError(null)
+    
+    try {
+      // Lock seats first
+      const response = await lockSeatsMutation.mutateAsync({
+        tripId: parseInt(tripId),
+        seats: selectedSeats,
+        lockOwner: userProfile?.id,
+      })
+      
+      // Store lock expiry in sessionStorage for payment page
+      sessionStorage.setItem('seatLockExpiresAt', response.lockExpiresAt)
+      
+      // Navigate to payment page
+      router.push(`/payment?tripId=${tripId}&seats=${selectedSeats.join(',')}`)
+    } catch (err) {
+      // Show error message
+      setLockError(getErrorMessage(err, 'Failed to lock seats. Please try again.'))
+    }
   }
 
   if (isLoading) {
@@ -175,6 +256,22 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32 md:pb-8">
+      {/* Error Toast */}
+      {lockError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4">
+          <div className="bg-destructive text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <p className="flex-1 text-sm">{lockError}</p>
+            <button
+              onClick={() => setLockError(null)}
+              className="p-1 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 shadow-md sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -266,6 +363,10 @@ export default function BookingPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-primary rounded" />
                   <span className="text-sm text-muted-foreground">Selected</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <span className="text-sm text-muted-foreground">Unavailable</span>
                 </div>
               </div>
             </div>
@@ -365,10 +466,17 @@ export default function BookingPage() {
                 {/* Proceed Button */}
                 <Button
                   onClick={handleProceedToPayment}
-                  disabled={selectedSeats.length === 0}
+                  disabled={selectedSeats.length === 0 || lockSeatsMutation.isPending}
                   className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3"
                 >
-                  Proceed to Payment
+                  {lockSeatsMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Locking Seats...
+                    </div>
+                  ) : (
+                    'Proceed to Payment'
+                  )}
                 </Button>
 
                 {selectedSeats.length === 0 && (
@@ -410,10 +518,17 @@ export default function BookingPage() {
           )}
           <Button
             onClick={handleProceedToPayment}
-            disabled={selectedSeats.length === 0}
+            disabled={selectedSeats.length === 0 || lockSeatsMutation.isPending}
             className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3"
           >
-            Proceed to Payment
+            {lockSeatsMutation.isPending ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Locking Seats...
+              </div>
+            ) : (
+              'Proceed to Payment'
+            )}
           </Button>
         </div>
       </div>

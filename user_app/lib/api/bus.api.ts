@@ -1,5 +1,7 @@
 import { apiClient } from './client';
-import type { SearchBusesResponse, SearchBusRequest, TripDetailsResponse } from '@/types/bus.type';
+import { storageKeys } from '@/lib/token';
+import type { SearchBusesResponse, SearchBusRequest, TripDetailsResponse, LockSeatsRequest, LockSeatsResponse } from '@/types/bus.type';
+import type { SeatStatus } from '@/types/bus.type';
 
 /**
  * Bus API service
@@ -40,6 +42,66 @@ export const busApi = {
    */
   getTripDetails: async (tripId: number): Promise<TripDetailsResponse> => {
     const response = await apiClient.get<TripDetailsResponse>(`/trips/${tripId}`);
+    const data = response.data;
+
+    // Get current user ID from localStorage
+    let currentUserId: number | undefined;
+    if (typeof window !== 'undefined') {
+      try {
+        const userProfile = localStorage.getItem(storageKeys.USER_PROFILE);
+        if (userProfile) {
+          const parsed = JSON.parse(userProfile);
+          currentUserId = parsed?.id;
+        }
+      } catch (error) {
+        console.error('Failed to get user profile:', error);
+      }
+    }
+
+    const now = new Date();
+
+    // Apply seat status logic
+    data.seatMatrix = data.seatMatrix.map(row =>
+      row.map(seat => {
+        let status: SeatStatus = 'AVAILABLE';
+
+        if (seat.isBooked) {
+          status = 'UNAVAILABLE';
+        } else if (seat.lockedUntil) {
+          const lockedUntilDate = new Date(seat.lockedUntil);
+          if (lockedUntilDate > now) {
+            // Seat is locked
+            if (seat.lockOwner === currentUserId) {
+              status = 'AVAILABLE';
+            } else {
+              status = 'UNAVAILABLE';
+            }
+          } else {
+            // Lock has expired
+            status = 'AVAILABLE';
+          }
+        } else {
+          // No lock, not booked
+          status = 'AVAILABLE';
+        }
+
+        return {
+          ...seat,
+          status,
+        };
+      })
+    );
+
+    return data;
+  },
+
+  /**
+   * Lock seats temporarily for booking
+   * @param request - Lock seats request with tripId and seats array
+   * @returns Promise with lock confirmation and expiry time
+   */
+  lockSeats: async (request: LockSeatsRequest): Promise<LockSeatsResponse> => {
+    const response = await apiClient.post<LockSeatsResponse>('/seats/lock', request);
     return response.data;
   },
 };

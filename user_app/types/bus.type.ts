@@ -32,12 +32,19 @@ export interface SearchBusRequest {
 }
 
 /**
+ * Seat status enum
+ */
+export type SeatStatus = 'AVAILABLE' | 'UNAVAILABLE';
+
+/**
  * Seat information (SeatDTO from backend)
- * Note: Seats returned in seatMatrix are all available seats
  */
 export interface Seat {
   seatNumber: string;
-  price: number;
+  status?: SeatStatus; // Seat availability status
+  lockOwner?: number;
+  lockedUntil?: string;
+  isBooked?: boolean;
 }
 
 /**
@@ -74,4 +81,23 @@ export interface Bus {
   price: number;
   seatsAvailable: number;
   busType: string;
+}
+
+/**
+ * Request body for locking seats
+ */
+export interface LockSeatsRequest {
+  tripId: number;
+  seats: string[];
+  // ID of the user locking the seats (maps to backend `lockOwner` Long field)
+  lockOwner?: number;
+}
+
+/**
+ * Response from lock seats API
+ */
+export interface LockSeatsResponse {
+  message: string;
+  lockedSeats: string[];
+  lockExpiresAt: string; // ISO date string
 }

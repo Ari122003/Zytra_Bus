@@ -7,6 +7,5 @@ package com.zytra.user_server.enums;
  */
 public enum SeatStatus {
     AVAILABLE, // Used only in DTOs for response, never persisted
-    LOCKED, // Temporarily held during booking process
     BOOKED // Confirmed reservation
 }
