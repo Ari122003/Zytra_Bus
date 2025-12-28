@@ -13,15 +13,13 @@ import com.zytra.user_server.user.exception.UserNotFoundException;
 import com.zytra.user_server.user.repository.UserRepository;
 import com.zytra.user_server.user.service.UserService;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-
-    public UserServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     // Get user information
 

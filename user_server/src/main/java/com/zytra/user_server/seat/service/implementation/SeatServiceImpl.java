@@ -1,8 +1,6 @@
 package com.zytra.user_server.seat.service.implementation;
 
 import com.zytra.user_server.seat.service.SeatService;
-import com.zytra.user_server.trips.entity.TripEntity;
-import com.zytra.user_server.trips.repository.TripRepository;
 import com.zytra.user_server.user.entity.UserEntity;
 import com.zytra.user_server.user.repository.UserRepository;
 
@@ -27,18 +25,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SeatServiceImpl implements SeatService {
 
-    private static final int LOCK_DURATION_MINUTES = 10;
-
-    private final SeatRepository seatRepository;
-    private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final SeatRepository seatRepository;
+
+    private static final int LOCK_DURATION_MINUTES = 10;
 
     @Override
     @Transactional
     public LockSeatsResponse lockSeats(long tripId, String[] seats, Long lockOwner) {
-
-        TripEntity tripEntity = tripRepository.findById(tripId)
-                .orElseThrow(() -> new RuntimeException("Trip not found with id: " + tripId));
 
         // resolve lockOwner id -> UserEntity
         if (lockOwner == null) {
@@ -54,6 +48,11 @@ public class SeatServiceImpl implements SeatService {
 
         List<String> seatList = Arrays.asList(seats);
         List<SeatEntity> currentLocks = seatRepository.findByTripIdAndSeatNumberIn(tripId, seatList);
+
+        if (currentLocks.size() != seatList.size()) {
+            throw new RuntimeException("One or more selected seats are invalid");
+        }
+
         List<SeatEntity> allLocksByUser = seatRepository.findByTripIdAndLockOwnerId(tripId, lockOwner);
 
         HashSet<SeatEntity> lockSet = new HashSet<>(currentLocks);
