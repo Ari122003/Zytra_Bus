@@ -1,5 +1,6 @@
 package com.zytra.user_server.trips.entity;
 
+import com.zytra.user_server.driver.entity.DriverEntity;
 import com.zytra.user_server.enums.TripSeatStatus;
 import com.zytra.user_server.enums.TripStatus;
 import com.zytra.user_server.schedule.entity.ScheduleEntity;
@@ -40,6 +41,10 @@ public class TripEntity {
 
         @Column(name = "fare", nullable = false, precision = 10, scale = 2)
         private BigDecimal fare;
+
+        @OneToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "driver_id", nullable = true, foreignKey = @ForeignKey(name = "fk_trip_driver"))
+        private DriverEntity driver;
 
         @Enumerated(EnumType.STRING)
         @Column(name = "status", nullable = false, length = 20)

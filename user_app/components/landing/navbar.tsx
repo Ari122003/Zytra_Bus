@@ -16,6 +16,30 @@ export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
 
+  const [progress, setProgress] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  // Trigger a quick top progress bar animation on every route change
+  useEffect(() => {
+    setIsAnimating(true)
+    setProgress(0)
+
+    const start = setTimeout(() => setProgress(40), 50)
+    const mid = setTimeout(() => setProgress(75), 200)
+    const end = setTimeout(() => setProgress(100), 400)
+    const done = setTimeout(() => {
+      setIsAnimating(false)
+      setProgress(0)
+    }, 650)
+
+    return () => {
+      clearTimeout(start)
+      clearTimeout(mid)
+      clearTimeout(end)
+      clearTimeout(done)
+    }
+  }, [pathname])
+
   // Avatar reads from UserContext; AuthContext hydrates after login
 
   const navLinks = [
@@ -144,6 +168,16 @@ export default function Navbar() {
           </div>
         )}
       </div>
+      
+      {/* Progress bar just below navbar, triggers on route change - spans full width */}
+      {isAnimating && (
+        <div className="h-1 w-full bg-transparent">
+          <div
+            className="h-1 bg-primary transition-all duration-200 ease-out"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
     </nav>
   )
 }
