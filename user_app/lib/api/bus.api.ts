@@ -1,7 +1,6 @@
 import { apiClient } from './client';
 import { storageKeys } from '@/lib/token';
-import type { SearchBusesResponse, SearchBusRequest, TripDetailsResponse, LockSeatsRequest, LockSeatsResponse } from '@/types/bus.type';
-import type { SeatStatus } from '@/types/bus.type';
+import type { SearchBusesResponse, SearchBusRequest, TripDetailsResponse, LockSeatsRequest, LockSeatsResponse, SeatStatus } from '@/types/bus.type';
 
 /**
  * Bus API service

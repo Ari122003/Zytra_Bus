@@ -1,7 +1,13 @@
 package com.zytra.user_server.seat.service.implementation;
 
+import com.zytra.user_server.seat.exception.InvalidSeatException;
+import com.zytra.user_server.seat.exception.LockOwnerRequiredException;
+import com.zytra.user_server.seat.exception.NoSeatsSpecifiedException;
+import com.zytra.user_server.seat.exception.SeatAlreadyLockedException;
+import com.zytra.user_server.seat.exception.SeatNotAvailableException;
 import com.zytra.user_server.seat.service.SeatService;
 import com.zytra.user_server.user.entity.UserEntity;
+import com.zytra.user_server.user.exception.UserNotFoundException;
 import com.zytra.user_server.user.repository.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -36,21 +42,21 @@ public class SeatServiceImpl implements SeatService {
 
         // resolve lockOwner id -> UserEntity
         if (lockOwner == null) {
-            throw new RuntimeException("lockOwner id is required");
+            throw new LockOwnerRequiredException("Lock owner id is required");
         }
 
         UserEntity user = userRepository.findById(lockOwner)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + lockOwner));
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + lockOwner));
 
         if (seats == null || seats.length == 0) {
-            throw new RuntimeException("No seats specified to lock");
+            throw new NoSeatsSpecifiedException("No seats specified to lock");
         }
 
         List<String> seatList = Arrays.asList(seats);
         List<SeatEntity> currentLocks = seatRepository.findByTripIdAndSeatNumberIn(tripId, seatList);
 
         if (currentLocks.size() != seatList.size()) {
-            throw new RuntimeException("One or more selected seats are invalid");
+            throw new InvalidSeatException("One or more selected seats are invalid");
         }
 
         List<SeatEntity> allLocksByUser = seatRepository.findByTripIdAndLockOwnerId(tripId, lockOwner);
@@ -77,12 +83,13 @@ public class SeatServiceImpl implements SeatService {
             if (seat.getLockedUntil() != null && seat.getLockedUntil().isAfter(now) &&
                     !seat.getLockOwner().getId().equals(lockOwner)) {
 
-                throw new RuntimeException("Seat already locked");
+                throw new SeatAlreadyLockedException(
+                        "Seat " + seat.getSeatNumber() + " is already locked by another user");
             }
 
             // Booked seat
             if (seat.getStatus() == SeatStatus.BOOKED) {
-                throw new RuntimeException("Seat already booked");
+                throw new SeatNotAvailableException("Seat " + seat.getSeatNumber() + " is already booked");
             }
 
             // if seat is locked by the same user and lock not expired and seat is not in

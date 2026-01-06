@@ -217,8 +217,8 @@ export default function BookingPage() {
       // Navigate to payment page
       router.push(`/payment?tripId=${tripId}&seats=${selectedSeats.join(',')}`)
     } catch (err) {
-      // Show error message
-      setLockError(getErrorMessage(err, 'Failed to lock seats. Please try again.'))
+      // Show API error message in the error alert
+      setLockError(getErrorMessage(err, 'Failed to lock seats. Please try again.', false))
     }
   }
 

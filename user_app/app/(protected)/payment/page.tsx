@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useTripDetails, useLockSeats } from "@/hooks"
+import { useTripDetails, useLockSeats, useCreateBooking } from "@/hooks"
 import { useUserProfile } from "@/contexts/UserContext"
 import { Button } from "@/components/ui/button"
 import { getErrorMessage } from "@/lib/utils"
@@ -17,6 +17,7 @@ import {
   Building2,
   AlertCircle,
   Check,
+  CheckCircle,
   Shield,
   Lock,
   X,
@@ -103,16 +104,13 @@ export default function PaymentPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
-  const [lockExpiresAt, setLockExpiresAt] = useState<string | null>(() => {
-    // Initialize from sessionStorage (only runs on client)
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('seatLockExpiresAt')
-    }
-    return null
-  })
+  const [isBookingSuccess, setIsBookingSuccess] = useState(false)
+  const [, setLockExpiresAt] = useState<string | null>(null)
 
   // Lock seats mutation for re-locking if expired
   const lockSeatsMutation = useLockSeats()
+  // Create booking mutation
+  const createBookingMutation = useCreateBooking()
   const { userProfile } = useUserProfile()
 
   // Fetch trip details
@@ -128,13 +126,7 @@ export default function PaymentPage() {
   const totalAmount = useMemo(() => {
     if (!tripDetails) return 0
     
-    const seatMatrix = tripDetails.seatMatrix || []
-    const allSeats = seatMatrix.flat()
-    
-    return selectedSeats.reduce((total, seatNumber) => {
-      const seat = allSeats.find(s => s.seatNumber === seatNumber)
-      return total + (seat?.price || tripDetails.fare || 0)
-    }, 0)
+    return selectedSeats.length * (tripDetails.fare || 0)
   }, [selectedSeats, tripDetails])
 
   // Convenience fee (2% of total)
@@ -144,16 +136,6 @@ export default function PaymentPage() {
 
   // Grand total
   const grandTotal = totalAmount + convenienceFee
-
-  /**
-   * Check if seat lock has expired
-   */
-  const isLockExpired = (): boolean => {
-    if (!lockExpiresAt) return true
-    const now = new Date().getTime()
-    const expiry = new Date(lockExpiresAt).getTime()
-    return now >= expiry
-  }
 
   /**
    * Attempt to re-lock seats
@@ -173,47 +155,108 @@ export default function PaymentPage() {
       sessionStorage.setItem('seatLockExpiresAt', response.lockExpiresAt)
       return true
     } catch (err) {
-      setPaymentError(getErrorMessage(err, 'Seats are no longer available. Redirecting to booking page...'))
+      setPaymentError(getErrorMessage(err, 'Seats are no longer available. Please go back and select again.', false))
       
       // Clear session storage
       sessionStorage.removeItem('seatLockExpiresAt')
-      
-      // Redirect to booking page after 3 seconds
-      setTimeout(() => {
-        // Preserve previously selected seats when redirecting back
-        router.push(`/booking?tripId=${tripId}&seats=${selectedSeats.join(',')}`)
-      }, 3000)
       
       return false
     }
   }
 
   const handlePayment = async () => {
-    if (!selectedPaymentMethod || selectedSeats.length === 0 || !tripId) return
+    if (!selectedPaymentMethod || selectedSeats.length === 0 || !tripId || !userProfile?.id) return
 
     // Clear any previous error
     setPaymentError(null)
     setIsProcessing(true)
     
-    // Check if lock has expired
-    if (isLockExpired()) {
-      // Try to re-lock seats
+    try {
+      // Step 1: Always relock seats before proceeding with payment
       const relockSuccess = await relockSeats()
       if (!relockSuccess) {
         setIsProcessing(false)
         return
       }
-    }
-    
-    // Proceed with payment
-    // In real implementation, this would call the payment API
-    setTimeout(() => {
-      setIsProcessing(false)
+      
+      // Step 2: Create the booking
+      await createBookingMutation.mutateAsync({
+        tripId: parseInt(tripId),
+        userId: userProfile.id,
+        amount: grandTotal,
+        seatNumbers: selectedSeats,
+      })
+      
       // Clear session storage on success
       sessionStorage.removeItem('seatLockExpiresAt')
-      // Navigate to success page
-      router.push(`/sucess?tripId=${tripId}&seats=${seatsParam}`)
-    }, 2000)
+      // Show success UI
+      setIsBookingSuccess(true)
+    } catch (err) {
+      setPaymentError(getErrorMessage(err, 'Payment failed. Please try again.', false))
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  // Show success UI after booking is complete
+  if (isBookingSuccess && tripDetails) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
+          {/* Success Icon */}
+          <div className="mx-auto w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-6">
+            <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+          </div>
+          
+          {/* Success Message */}
+          <h1 className="text-2xl font-bold text-foreground mb-2">Booking Confirmed!</h1>
+          <p className="text-muted-foreground mb-6">
+            Your seats have been successfully booked.
+          </p>
+          
+          {/* Booking Details */}
+          <div className="bg-muted/50 rounded-xl p-4 mb-6 text-left space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Route</span>
+              <span className="font-medium text-foreground">{tripDetails.source} → {tripDetails.destination}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Date</span>
+              <span className="font-medium text-foreground">{formatDate(tripDetails.travelDate)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Departure</span>
+              <span className="font-medium text-foreground">{formatTime(tripDetails.departureTime)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Seats</span>
+              <span className="font-medium text-foreground">{selectedSeats.join(', ')}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-border pt-3">
+              <span className="text-sm text-muted-foreground">Amount Paid</span>
+              <span className="font-bold text-primary text-lg">₹{grandTotal}</span>
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="space-y-3">
+            <Button 
+              onClick={() => router.push('/bookings')}
+              className="w-full bg-primary hover:bg-primary/90"
+            >
+              View My Bookings
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => router.push('/')}
+              className="w-full"
+            >
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Validate URL parameters

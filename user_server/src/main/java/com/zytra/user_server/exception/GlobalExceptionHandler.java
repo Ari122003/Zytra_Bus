@@ -11,9 +11,17 @@ import com.zytra.user_server.auth.dto.response.ErrorResponse;
 import com.zytra.user_server.auth.exception.InvalidCredentialException;
 import com.zytra.user_server.auth.exception.InvalidOtpException;
 import com.zytra.user_server.auth.exception.InvalidUserException;
+import com.zytra.user_server.bookings.exception.InvalidSeatSelectionException;
+import com.zytra.user_server.bookings.exception.SeatAlreadyBookedException;
+import com.zytra.user_server.bookings.exception.SeatLockExpiredException;
 import com.zytra.user_server.bus.exception.InvalidTravelDateException;
 import com.zytra.user_server.bus.exception.NoBusAvailableException;
 import com.zytra.user_server.bus.exception.RouteNotFoundException;
+import com.zytra.user_server.seat.exception.InvalidSeatException;
+import com.zytra.user_server.seat.exception.LockOwnerRequiredException;
+import com.zytra.user_server.seat.exception.NoSeatsSpecifiedException;
+import com.zytra.user_server.seat.exception.SeatAlreadyLockedException;
+import com.zytra.user_server.seat.exception.SeatNotAvailableException;
 import com.zytra.user_server.trips.exception.TripCancelledException;
 import com.zytra.user_server.trips.exception.TripNotFoundException;
 import com.zytra.user_server.user.exception.UserNotFoundException;
@@ -140,6 +148,86 @@ public class GlobalExceptionHandler {
         return ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(InvalidSeatSelectionException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidSeatSelectionException(InvalidSeatSelectionException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(SeatAlreadyBookedException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleSeatAlreadyBookedException(SeatAlreadyBookedException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(SeatLockExpiredException.class)
+    @ResponseStatus(HttpStatus.GONE)
+    public ErrorResponse handleSeatLockExpiredException(SeatLockExpiredException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.GONE.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(LockOwnerRequiredException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleLockOwnerRequiredException(LockOwnerRequiredException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(NoSeatsSpecifiedException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleNoSeatsSpecifiedException(NoSeatsSpecifiedException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(InvalidSeatException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleInvalidSeatException(InvalidSeatException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(SeatAlreadyLockedException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleSeatAlreadyLockedException(SeatAlreadyLockedException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(SeatNotAvailableException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleSeatNotAvailableException(SeatNotAvailableException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
                 .message(ex.getMessage())
                 .build();
     }

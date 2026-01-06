@@ -1,9 +1,9 @@
 package com.zytra.user_server.seat.dto;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.zytra.user_server.enums.SeatStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +19,8 @@ public class SeatDTO {
     private String seatNumber;
     private Long lockOwner;
     private LocalDateTime lockedUntil;
+
+    @JsonProperty("isBooked")
     private boolean isBooked;
 
 }
