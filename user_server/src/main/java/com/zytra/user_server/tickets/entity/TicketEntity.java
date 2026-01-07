@@ -32,6 +32,9 @@ public class TicketEntity {
     @Column(name = "qr_code_data", nullable = false, columnDefinition = "TEXT")
     private String qrCodeData;
 
+    @Column(name = "valid_until", nullable = false)
+    private LocalDateTime validUntil;
+
     @CreationTimestamp
     @Column(name = "generated_at", updatable = false)
     private LocalDateTime generatedAt;

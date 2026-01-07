@@ -12,6 +12,7 @@ import com.zytra.user_server.auth.exception.InvalidCredentialException;
 import com.zytra.user_server.auth.exception.InvalidOtpException;
 import com.zytra.user_server.auth.exception.InvalidUserException;
 import com.zytra.user_server.bookings.exception.InvalidSeatSelectionException;
+import com.zytra.user_server.bookings.exception.NoBookingFoundException;
 import com.zytra.user_server.bookings.exception.SeatAlreadyBookedException;
 import com.zytra.user_server.bookings.exception.SeatLockExpiredException;
 import com.zytra.user_server.bus.exception.InvalidTravelDateException;
@@ -228,6 +229,16 @@ public class GlobalExceptionHandler {
         return ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(NoBookingFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleNoBookingFoundException(NoBookingFoundException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
                 .message(ex.getMessage())
                 .build();
     }

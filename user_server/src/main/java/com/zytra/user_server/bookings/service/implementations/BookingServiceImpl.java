@@ -8,11 +8,14 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.zytra.user_server.bookings.dto.BookingDetails;
 import com.zytra.user_server.bookings.dto.BookingResponse;
+import com.zytra.user_server.bookings.dto.GetBookingResponse;
 import com.zytra.user_server.bookings.entity.BookingEntity;
 import com.zytra.user_server.bookings.entity.BookingSeatEntity;
 import com.zytra.user_server.bookings.entity.BookingSeatId;
 import com.zytra.user_server.bookings.exception.InvalidSeatSelectionException;
+import com.zytra.user_server.bookings.exception.NoBookingFoundException;
 import com.zytra.user_server.bookings.exception.SeatAlreadyBookedException;
 import com.zytra.user_server.bookings.exception.SeatLockExpiredException;
 import com.zytra.user_server.bookings.repository.BookingRepository;
@@ -22,6 +25,7 @@ import com.zytra.user_server.enums.BookingStatus;
 import com.zytra.user_server.enums.SeatStatus;
 import com.zytra.user_server.seat.entity.SeatEntity;
 import com.zytra.user_server.seat.repository.SeatRepository;
+import com.zytra.user_server.tickets.service.TicketService;
 import com.zytra.user_server.trips.entity.TripEntity;
 import com.zytra.user_server.trips.exception.TripNotFoundException;
 import com.zytra.user_server.trips.repository.TripRepository;
@@ -41,6 +45,7 @@ public class BookingServiceImpl implements BookingService {
     private final SeatRepository seatRepository;
     private final BookingRepository bookingRepository;
     private final BookingSeatRepository bookingSeatRepository;
+    private final TicketService ticketService;
 
     @Override
     @Transactional
@@ -55,7 +60,7 @@ public class BookingServiceImpl implements BookingService {
 
         List<String> seatList = Arrays.asList(seatNumbers);
 
-        List<SeatEntity> seats = seatRepository.findByTripIdLockOwnerIdSeatNumbersIn(tripId, user.getId(), seatNumbers);
+        List<SeatEntity> seats = seatRepository.findByTripIdLockOwnerIdSeatNumbersIn(tripId, user.getId(), seatList);
 
         if (seats.size() != seatList.size()) {
             throw new InvalidSeatSelectionException(
@@ -105,8 +110,26 @@ public class BookingServiceImpl implements BookingService {
         // Batch save for efficiency
         seatRepository.saveAll(seats);
         bookingSeatRepository.saveAll(bookingSeats);
+        ticketService.generateTicket(booking);
 
         return BookingResponse.builder().message("Booking Successful").build();
     }
 
+    @Override
+
+    public GetBookingResponse getBookingsForUser(Long userId) {
+
+        // Ensure user exists
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+
+        List<BookingDetails> formatedBookings = bookingRepository.findBookingDetailsByUserId(userId);
+
+        if (formatedBookings.isEmpty()) {
+            throw new NoBookingFoundException("No bookings found for user with id: " + userId);
+        }
+
+        return GetBookingResponse.builder().bookings(formatedBookings).build();
+
+    }
 }

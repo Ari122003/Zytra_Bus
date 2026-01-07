@@ -189,6 +189,10 @@ export default function PaymentPage() {
       
       // Clear session storage on success
       sessionStorage.removeItem('seatLockExpiresAt')
+      // Remove persisted selected seats for this trip (if any)
+      if (tripId) {
+        sessionStorage.removeItem(`booking_selectedSeats_${tripId}`)
+      }
       // Show success UI
       setIsBookingSuccess(true)
     } catch (err) {

@@ -19,40 +19,41 @@ import jakarta.persistence.LockModeType;
 @Repository
 public interface SeatRepository extends JpaRepository<SeatEntity, Long> {
 
-    /**
-     * ;
-     * Find all seats for a given trip, ordered by seat number for consistent
-     * display.
-     */
+        /**
+         * ;
+         * Find all seats for a given trip, ordered by seat number for consistent
+         * display.
+         */
 
-    List<SeatEntity> findByTripOrderBySeatNumber(TripEntity trip);
+        List<SeatEntity> findByTripOrderBySeatNumber(TripEntity trip);
 
-    // removed unused: existsByTripId was not referenced elsewhere
+        // removed unused: existsByTripId was not referenced elsewhere
 
-    @Query("SELECT COUNT(s) FROM SeatEntity s WHERE s.trip = :trip AND s.status = :status")
-    int countByTripAndStatus(TripEntity trip, SeatStatus status);
+        @Query("SELECT COUNT(s) FROM SeatEntity s WHERE s.trip = :trip AND s.status = :status")
+        int countByTripAndStatus(TripEntity trip, SeatStatus status);
 
-    @Modifying
-    @Query("""
-                UPDATE SeatEntity s
-                SET s.lockedUntil = NULL,
-                    s.lockOwner = NULL
-                WHERE s.lockedUntil IS NOT NULL
-                  AND s.lockedUntil <= :now
-                  AND s.booking IS NULL
-            """)
-    int clearExpiredLocks(@Param("now") LocalDateTime now);
+        @Modifying
+        @Query("""
+                            UPDATE SeatEntity s
+                            SET s.lockedUntil = NULL,
+                                s.lockOwner = NULL
+                            WHERE s.lockedUntil IS NOT NULL
+                              AND s.lockedUntil <= :now
+                              AND s.booking IS NULL
+                        """)
+        int clearExpiredLocks(@Param("now") LocalDateTime now);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM SeatEntity s WHERE s.trip.id = :tripId AND s.lockOwner.id = :lockOwnerId")
-    List<SeatEntity> findByTripIdAndLockOwnerId(Long tripId, Long lockOwnerId);
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        @Query("SELECT s FROM SeatEntity s WHERE s.trip.id = :tripId AND s.lockOwner.id = :lockOwnerId")
+        List<SeatEntity> findByTripIdAndLockOwnerId(Long tripId, Long lockOwnerId);
 
-    @Query("SELECT s FROM SeatEntity s WHERE s.trip.id = :tripId AND s.seatNumber IN :seatNumbers")
-    List<SeatEntity> findByTripIdAndSeatNumberIn(@Param("tripId") Long tripId,
-            @Param("seatNumbers") List<String> seatNumbers);
+        @Query("SELECT s FROM SeatEntity s WHERE s.trip.id = :tripId AND s.seatNumber IN :seatNumbers")
+        List<SeatEntity> findByTripIdAndSeatNumberIn(@Param("tripId") Long tripId,
+                        @Param("seatNumbers") List<String> seatNumbers);
 
-    @Query("SELECT s FROM SeatEntity s WHERE s.trip.id = :tripId AND s.seatNumber IN :seatNumbers AND s.lockOwner.id = :userId ")
-    List<SeatEntity> findByTripIdLockOwnerIdSeatNumbersIn(@Param("tripId") Long tripId, @Param("userId") Long userId,
-            @Param("seatNumbers") String[] seatNumbers);
+        @Query("SELECT s FROM SeatEntity s WHERE s.trip.id = :tripId AND s.seatNumber IN :seatNumbers AND s.lockOwner.id = :userId ")
+        List<SeatEntity> findByTripIdLockOwnerIdSeatNumbersIn(@Param("tripId") Long tripId,
+                        @Param("userId") Long userId,
+                        @Param("seatNumbers") List<String> seatNumbers);
 
 }

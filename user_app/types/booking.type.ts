@@ -21,6 +21,26 @@ export interface CreateBookingResponse {
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 /**
+ * User booking item from the API
+ */
+export interface UserBooking {
+  bookingId: number;
+  source: string;
+  destination: string;
+  travelDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  totalSeats: number;
+}
+
+/**
+ * Response wrapper for user bookings API
+ */
+export interface UserBookingsResponse {
+  bookings: UserBooking[];
+}
+
+/**
  * Booking details
  */
 export interface Booking {
