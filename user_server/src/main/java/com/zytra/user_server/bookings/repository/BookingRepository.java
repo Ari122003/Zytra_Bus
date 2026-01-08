@@ -1,6 +1,7 @@
 package com.zytra.user_server.bookings.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,5 +20,7 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
             "JOIN s.route r " +
             "WHERE b.user.id = :userId")
     List<BookingDetails> findBookingDetailsByUserId(@Param("userId") Long userId);
+
+    Optional<BookingEntity> findById(Long bookingId);
 
 }

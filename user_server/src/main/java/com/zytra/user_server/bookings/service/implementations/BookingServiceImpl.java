@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.zytra.user_server.bookings.dto.BookingDetails;
 import com.zytra.user_server.bookings.dto.BookingResponse;
+import com.zytra.user_server.bookings.dto.GetBookingByIdResponse;
 import com.zytra.user_server.bookings.dto.GetBookingResponse;
 import com.zytra.user_server.bookings.entity.BookingEntity;
 import com.zytra.user_server.bookings.entity.BookingSeatEntity;
@@ -33,7 +34,7 @@ import com.zytra.user_server.user.entity.UserEntity;
 import com.zytra.user_server.user.exception.UserNotFoundException;
 import com.zytra.user_server.user.repository.UserRepository;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -116,7 +117,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
-
+    @Transactional(readOnly = true)
     public GetBookingResponse getBookingsForUser(Long userId) {
 
         // Ensure user exists
@@ -132,4 +133,33 @@ public class BookingServiceImpl implements BookingService {
         return GetBookingResponse.builder().bookings(formatedBookings).build();
 
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public GetBookingByIdResponse getBookingById(Long bookingId) {
+
+        BookingEntity booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NoBookingFoundException("No booking found with id: " + bookingId));
+
+        GetBookingByIdResponse response = GetBookingByIdResponse.builder()
+                .bookingId(booking.getId())
+                .source(booking.getTrip().getSchedule().getRoute().getSource())
+                .destination(booking.getTrip().getSchedule().getRoute().getDestination())
+                .travelDate(booking.getTrip().getTravelDate())
+                .departureTime(booking.getTrip().getSchedule().getDepartureTime())
+                .arrivalTime(booking.getTrip().getSchedule().getArrivalTime())
+                .totalSeats(booking.getSeatCount())
+                .amount(booking.getTotalAmount().doubleValue())
+                .seatNumbers()
+                .distance(booking.getTrip().getSchedule().getRoute().getDistanceKm())
+                .travelTime()
+                .busType(booking.getTrip().getSchedule().get)
+                .busNumber(booking.getTrip().getBus().getBusNumber())
+                .ticketQr(booking.getTicket().getQrCodeData())
+                .bookingStatus(booking.getBookingStatus().name())
+                .driverName(booking.getTrip().getBus().getDriverName())
+                .driverContact(booking.getTrip().getBus().getDriverContact())
+                .build();
+    }
+
 }

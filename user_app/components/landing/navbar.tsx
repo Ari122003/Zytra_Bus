@@ -43,7 +43,7 @@ export default function Navbar() {
   // Avatar reads from UserContext; AuthContext hydrates after login
 
   const navLinks = [
-    { label: "Book Buses", href: "/" },
+    { label: "Bookings", href: "/bookings" },
     { label: "Routes", href: "#" },
     { label: "Services", href: "#" },
   ]
