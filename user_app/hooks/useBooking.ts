@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { bookingApi } from '@/lib/api/booking.api';
-import type { CreateBookingRequest, CreateBookingResponse, UserBooking } from '@/types/booking.type';
+import type { CreateBookingRequest, CreateBookingResponse, UserBooking, BookingDetail } from '@/types/booking.type';
 
 /**
  * Query keys for booking-related queries
@@ -30,5 +30,17 @@ export const useUserBookings = (userId: number | null | undefined) => {
     queryKey: bookingQueryKeys.userBookings(userId || 0),
     queryFn: () => bookingApi.getUserBookings(userId!),
     enabled: !!userId,
+  });
+};
+
+/**
+ * Hook to fetch booking details by ID
+ * @param bookingId - Booking ID to fetch details for
+ */
+export const useBookingDetail = (bookingId: number | null | undefined) => {
+  return useQuery<BookingDetail, Error>({
+    queryKey: bookingQueryKeys.detail(bookingId || 0),
+    queryFn: () => bookingApi.getBookingById(bookingId!),
+    enabled: !!bookingId,
   });
 };

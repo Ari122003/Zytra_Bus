@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { CreateBookingRequest, CreateBookingResponse, UserBooking, UserBookingsResponse } from '@/types/booking.type';
+import type { CreateBookingRequest, CreateBookingResponse, UserBooking, UserBookingsResponse, BookingDetail } from '@/types/booking.type';
 
 /**
  * Booking API service
@@ -23,5 +23,15 @@ export const bookingApi = {
   getUserBookings: async (userId: number): Promise<UserBooking[]> => {
     const response = await apiClient.get<UserBookingsResponse>(`/booking/${userId}`);
     return response.data.bookings;
+  },
+
+  /**
+   * Get booking details by booking ID
+   * @param bookingId - Booking ID to fetch details for
+   * @returns Promise with detailed booking information
+   */
+  getBookingById: async (bookingId: number): Promise<BookingDetail> => {
+    const response = await apiClient.get<BookingDetail>(`/booking/details/${bookingId}`);
+    return response.data;
   },
 };

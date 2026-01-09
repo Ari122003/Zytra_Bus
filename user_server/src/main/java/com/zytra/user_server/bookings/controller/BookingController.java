@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.zytra.user_server.bookings.dto.BookingRequest;
 import com.zytra.user_server.bookings.dto.BookingResponse;
+import com.zytra.user_server.bookings.dto.GetBookingByIdResponse;
 import com.zytra.user_server.bookings.dto.GetBookingResponse;
 import com.zytra.user_server.bookings.service.BookingService;
 
@@ -36,6 +37,11 @@ public class BookingController {
     @GetMapping("/{userId}")
     public ResponseEntity<GetBookingResponse> getBookingsForUser(@PathVariable Long userId) {
         return ResponseEntity.ok(bookingService.getBookingsForUser(userId));
+    }
+
+    @GetMapping("/details/{bookingId}")
+    public ResponseEntity<GetBookingByIdResponse> getBookingById(@PathVariable Long bookingId) {
+        return ResponseEntity.ok(bookingService.getBookingById(bookingId));
     }
 
 }

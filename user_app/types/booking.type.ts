@@ -53,3 +53,26 @@ export interface Booking {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Detailed booking information response
+ */
+export interface BookingDetail {
+  bookingId: number;
+  source: string;
+  destination: string;
+  travelDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  totalSeats: number;
+  amount: number;
+  seatNumbers: string[];
+  distance: number;
+  travelTime: string;
+  busType: string;
+  busNumber: string;
+  ticketQr: string;
+  bookingStatus: string;
+  driverName: string;
+  driverContact: string;
+}

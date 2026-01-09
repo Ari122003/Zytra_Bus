@@ -1,7 +1,9 @@
 package com.zytra.user_server.bookings.service.implementations;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +28,8 @@ import com.zytra.user_server.enums.BookingStatus;
 import com.zytra.user_server.enums.SeatStatus;
 import com.zytra.user_server.seat.entity.SeatEntity;
 import com.zytra.user_server.seat.repository.SeatRepository;
+import com.zytra.user_server.tickets.entity.TicketEntity;
+import com.zytra.user_server.tickets.repository.TicketRepository;
 import com.zytra.user_server.tickets.service.TicketService;
 import com.zytra.user_server.trips.entity.TripEntity;
 import com.zytra.user_server.trips.exception.TripNotFoundException;
@@ -47,6 +51,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final BookingSeatRepository bookingSeatRepository;
     private final TicketService ticketService;
+    private final TicketRepository ticketRepository;
 
     @Override
     @Transactional
@@ -108,10 +113,13 @@ public class BookingServiceImpl implements BookingService {
             bookingSeats.add(bookingSeatEntity);
         }
 
+        trip.setAvailableSeats(trip.getAvailableSeats() - seats.size());
+
         // Batch save for efficiency
         seatRepository.saveAll(seats);
         bookingSeatRepository.saveAll(bookingSeats);
         ticketService.generateTicket(booking);
+        tripRepository.save(trip);
 
         return BookingResponse.builder().message("Booking Successful").build();
     }
@@ -138,8 +146,17 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public GetBookingByIdResponse getBookingById(Long bookingId) {
 
-        BookingEntity booking = bookingRepository.findById(bookingId)
+        BookingEntity booking = bookingRepository.findByIdWithDetails(bookingId)
                 .orElseThrow(() -> new NoBookingFoundException("No booking found with id: " + bookingId));
+
+        List<String> seatNumbers = bookingSeatRepository.findSeatNumbersByBookingId(bookingId);
+
+        TicketEntity ticket = ticketRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new NoBookingFoundException("No ticket found for booking id: " + bookingId));
+
+        String travelTime = calculateTravelTime(
+                booking.getTrip().getSchedule().getDepartureTime(),
+                booking.getTrip().getSchedule().getArrivalTime());
 
         GetBookingByIdResponse response = GetBookingByIdResponse.builder()
                 .bookingId(booking.getId())
@@ -150,16 +167,32 @@ public class BookingServiceImpl implements BookingService {
                 .arrivalTime(booking.getTrip().getSchedule().getArrivalTime())
                 .totalSeats(booking.getSeatCount())
                 .amount(booking.getTotalAmount().doubleValue())
-                .seatNumbers()
+                .seatNumbers(seatNumbers)
                 .distance(booking.getTrip().getSchedule().getRoute().getDistanceKm())
-                .travelTime()
-                .busType(booking.getTrip().getSchedule().get)
-                .busNumber(booking.getTrip().getBus().getBusNumber())
-                .ticketQr(booking.getTicket().getQrCodeData())
+                .travelTime(travelTime)
+                .busNumber(booking.getTrip().getSchedule().getBus().getBusNumber())
+                .ticketQr(ticket.getQrCodeData())
                 .bookingStatus(booking.getBookingStatus().name())
-                .driverName(booking.getTrip().getBus().getDriverName())
-                .driverContact(booking.getTrip().getBus().getDriverContact())
+                .driverName("XXXXXXXXXXXXXXXX")
+                .driverContact("1111111111")
                 .build();
+
+        return response;
+    }
+
+    private String calculateTravelTime(LocalTime departureTime, LocalTime arrivalTime) {
+        Duration duration;
+
+        if (arrivalTime.isBefore(departureTime)) {
+            duration = Duration.between(departureTime, arrivalTime.plusHours(24));
+        } else {
+            duration = Duration.between(departureTime, arrivalTime);
+        }
+
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+
+        return String.format("%02d hours and %02d minutes", hours, minutes);
     }
 
 }
