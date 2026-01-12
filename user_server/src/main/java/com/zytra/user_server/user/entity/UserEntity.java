@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 import com.zytra.user_server.enums.UserStatus;
+import com.zytra.user_server.enums.UserRole;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
@@ -45,6 +46,10 @@ public class UserEntity {
     @Column(nullable = false)
     private UserStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
+
     @Column(name = "image_url")
     private String imageUrl;
 
@@ -57,6 +62,9 @@ public class UserEntity {
 
     @PrePersist
     protected void onCreate() {
+        if (this.role == null) {
+            this.role = UserRole.USER;
+        }
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
     }

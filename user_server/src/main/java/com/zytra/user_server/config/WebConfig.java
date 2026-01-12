@@ -23,6 +23,7 @@ public class WebConfig implements WebMvcConfigurer {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.addAllowedOrigin("http://localhost:3000");
+        config.addAllowedOrigin("http://localhost:3001");
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://localhost:4200");
         config.addAllowedHeader("*");
@@ -41,11 +42,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/**")
+                .addPathPatterns("/user/**", "/driver/**")
                 .excludePathPatterns(
-                        "/auth/login",
-                        "/auth/verify-otp",
-                        "/auth/refresh",
+                        "/user/auth/**",
+                        "/driver/auth/**",
                         "/error",
                         "/actuator/**");
     }

@@ -1,6 +1,6 @@
-# Zytra Bus - User Authentication Server
+# Zytra Bus - User & Driver Authentication Server
 
-A robust Spring Boot authentication service featuring JWT-based authentication, OTP verification, and refresh token management for the Zytra Bus application.
+A robust Spring Boot authentication service featuring JWT-based authentication with role-based authorization, OTP verification, and refresh token management for both User and Driver applications.
 
 ## 📋 Table of Contents
 
@@ -16,6 +16,8 @@ A robust Spring Boot authentication service featuring JWT-based authentication, 
 ## ✨ Features
 
 - 🔐 **JWT Authentication** - Secure token-based authentication
+- 👥 **Role-Based Authorization** - Separate access control for Users and Drivers
+- 🛡️ **Path-Based Security** - Users can only access `/user/*`, Drivers only `/driver/*`
 - 📧 **Email OTP Verification** - Email verification for new user registration
 - 🔄 **Refresh Token Management** - Token rotation with automatic expiry
 - 🔒 **Password Encryption** - Secure password storage
@@ -42,7 +44,18 @@ A robust Spring Boot authentication service featuring JWT-based authentication, 
 
 ## 🚀 Installation
 
-1. **Configure application properties**
+1. **Database Setup**
+
+   Run the migration SQL to add role-based authorization:
+
+   ```sql
+   ALTER TABLE users ADD COLUMN role VARCHAR(10) NOT NULL DEFAULT 'USER';
+   ALTER TABLE drivers ADD COLUMN role VARCHAR(10) NOT NULL DEFAULT 'DRIVER';
+   UPDATE users SET role = 'USER';
+   UPDATE drivers SET role = 'DRIVER';
+   ```
+
+2. **Configure application properties**
 
    Update `src/main/resources/application.properties` with your settings:
 
@@ -62,13 +75,13 @@ A robust Spring Boot authentication service featuring JWT-based authentication, 
    jwt.refresh.token.expiration-days=90
    ```
 
-2. **Build the project**
+3. **Build the project**
 
    ```bash
    mvn clean install
    ```
 
-3. **Run the application**
+4. **Run the application**
    ```bash
    mvn spring-boot:run
    ```

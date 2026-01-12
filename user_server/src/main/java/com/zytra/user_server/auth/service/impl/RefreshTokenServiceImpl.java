@@ -25,6 +25,12 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     @Transactional
     public RefreshTokenEntity createRefreshToken(UserEntity user, String token, String deviceInfo, String ipAddress) {
+        return createRefreshToken(user.getId(), token, deviceInfo, ipAddress);
+    }
+
+    @Override
+    @Transactional
+    public RefreshTokenEntity createRefreshToken(Long userId, String token, String deviceInfo, String ipAddress) {
         String tokenHash = hashToken(token);
 
         LocalDateTime now = LocalDateTime.now();
@@ -32,7 +38,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         RefreshTokenEntity refreshToken = RefreshTokenEntity.builder()
                 .tokenHash(tokenHash)
-                .userId(user.getId())
+                .userId(userId)
                 .issuedAt(now)
                 .expiresAt(expiry)
                 .lastUsedAt(now)

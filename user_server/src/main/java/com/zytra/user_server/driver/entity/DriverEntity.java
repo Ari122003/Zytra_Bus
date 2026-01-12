@@ -3,6 +3,7 @@ package com.zytra.user_server.driver.entity;
 import java.time.LocalDateTime;
 
 import com.zytra.user_server.enums.DriverStatus;
+import com.zytra.user_server.enums.UserRole;
 import com.zytra.user_server.routes.entity.RouteEntity;
 
 import jakarta.persistence.*;
@@ -44,6 +45,10 @@ public class DriverEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DriverStatus status = DriverStatus.ACTIVE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.DRIVER;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

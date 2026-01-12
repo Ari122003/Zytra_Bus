@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 
-@RequestMapping("/booking")
+@RequestMapping("/user/booking")
 @RequiredArgsConstructor
 public class BookingController {
 

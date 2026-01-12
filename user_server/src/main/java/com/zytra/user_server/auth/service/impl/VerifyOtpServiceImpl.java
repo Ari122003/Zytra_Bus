@@ -10,6 +10,7 @@ import com.zytra.user_server.auth.dto.response.LoginResponse;
 import com.zytra.user_server.auth.entity.OtpEntity;
 import com.zytra.user_server.user.entity.UserEntity;
 import com.zytra.user_server.enums.UserStatus;
+import com.zytra.user_server.enums.UserRole;
 import com.zytra.user_server.auth.exception.InvalidOtpException;
 import com.zytra.user_server.auth.exception.InvalidUserException;
 import com.zytra.user_server.auth.repository.OtpRepository;

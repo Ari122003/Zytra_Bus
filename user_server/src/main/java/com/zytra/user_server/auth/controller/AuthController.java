@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/user")
 
 public class AuthController {
 
@@ -35,8 +35,10 @@ public class AuthController {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
-    public AuthController(AuthService authService, VerifyOtpService verifyOtpService,
-            RefreshTokenService refreshTokenService, UserRepository userRepository,
+    public AuthController(AuthService authService,
+            VerifyOtpService verifyOtpService,
+            RefreshTokenService refreshTokenService,
+            UserRepository userRepository,
             JwtUtil jwtUtil) {
         this.authService = authService;
         this.verifyOtpService = verifyOtpService;
@@ -45,18 +47,19 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    @PostMapping("/login")
-    public LoginResponse loginController(@RequestBody @Valid LoginRequest request) {
+    // User authentication endpoints
+    @PostMapping("/auth/login")
+    public LoginResponse userLoginController(@RequestBody @Valid LoginRequest request) {
         return authService.login(request);
     }
 
-    @PostMapping("/verify-otp")
-    public LoginResponse verifyOtpController(@RequestBody @Valid VerifyOtpRequest request) {
+    @PostMapping("/auth/verify-otp")
+    public LoginResponse userVerifyOtpController(@RequestBody @Valid VerifyOtpRequest request) {
         return verifyOtpService.verifyOtp(request);
     }
 
-    @PostMapping("/refresh")
-    public LoginResponse refreshTokenController(@RequestBody @Valid RefreshTokenRequest request) {
+    @PostMapping("/auth/refresh")
+    public LoginResponse userRefreshTokenController(@RequestBody @Valid RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
         // Validate refresh token and get token entity
@@ -80,7 +83,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logoutController(@RequestBody @Valid RefreshTokenRequest request) {
+    public ResponseEntity<Map<String, String>> userLogoutController(@RequestBody @Valid RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
         // Revoke the refresh token

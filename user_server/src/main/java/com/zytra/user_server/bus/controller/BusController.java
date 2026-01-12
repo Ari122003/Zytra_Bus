@@ -13,7 +13,7 @@ import com.zytra.user_server.bus.dto.SearchBusesResponse;
 import com.zytra.user_server.bus.service.BusService;
 
 @RestController
-@RequestMapping("/buses")
+@RequestMapping("/user/buses")
 public class BusController {
 
     BusService busService;

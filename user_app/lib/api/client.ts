@@ -3,7 +3,7 @@ import { tokenManager } from '../token';
 import type { LoginResponse } from '@/types/auth.type';
 
 // Base URL from environment or default
-export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/user';
 
 /**
  * Create axios instance with default configuration

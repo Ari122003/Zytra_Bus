@@ -17,7 +17,7 @@ import com.zytra.user_server.user.service.UserService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/user/users")
 public class UserController {
 
     private final UserService userService;

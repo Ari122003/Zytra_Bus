@@ -1,6 +1,7 @@
 package com.zytra.user_server.util;
 
 import com.zytra.user_server.user.entity.UserEntity;
+import com.zytra.user_server.driver.entity.DriverEntity;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -51,6 +52,7 @@ public class JwtUtil {
                 .setSubject(user.getEmail())
                 .setId(UUID.randomUUID().toString())
                 .claim("userId", user.getId())
+                .claim("role", user.getRole().name())
                 .claim("status", user.getStatus().name())
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiry))
@@ -69,6 +71,45 @@ public class JwtUtil {
                 .setSubject(user.getEmail())
                 .setId(UUID.randomUUID().toString())
                 .claim("userId", user.getId())
+                .claim("role", user.getRole().name())
+                .claim("type", "refresh")
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(expiry))
+                .setIssuer("zytra-user-server")
+                .setAudience("zytra-api")
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateAccessToken(DriverEntity driver) {
+        Instant now = Instant.now();
+        Instant expiry = now.plus(accessTokenMinutes, ChronoUnit.MINUTES);
+        SecretKey key = getSigningKey(null);
+
+        return Jwts.builder()
+                .setSubject(driver.getEmail())
+                .setId(UUID.randomUUID().toString())
+                .claim("userId", driver.getId())
+                .claim("role", driver.getRole().name())
+                .claim("status", driver.getStatus().name())
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(expiry))
+                .setIssuer("zytra-user-server")
+                .setAudience("zytra-api")
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public String generateRefreshToken(DriverEntity driver) {
+        Instant now = Instant.now();
+        Instant expiry = now.plus(refreshTokenDays, ChronoUnit.DAYS);
+        SecretKey key = getSigningKey(null);
+
+        return Jwts.builder()
+                .setSubject(driver.getEmail())
+                .setId(UUID.randomUUID().toString())
+                .claim("userId", driver.getId())
+                .claim("role", driver.getRole().name())
                 .claim("type", "refresh")
                 .setIssuedAt(Date.from(now))
                 .setExpiration(Date.from(expiry))

@@ -11,6 +11,11 @@ public interface RefreshTokenService {
     RefreshTokenEntity createRefreshToken(UserEntity user, String token, String deviceInfo, String ipAddress);
 
     /**
+     * Creates and persists a refresh token for a userId (driver or user)
+     */
+    RefreshTokenEntity createRefreshToken(Long userId, String token, String deviceInfo, String ipAddress);
+
+    /**
      * Validates and returns the refresh token entity (throws if
      * invalid/revoked/expired)
      */

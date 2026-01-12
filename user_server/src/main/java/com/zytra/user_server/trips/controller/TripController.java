@@ -13,7 +13,7 @@ import com.zytra.user_server.trips.service.TripService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/trips")
+@RequestMapping("/user/trips")
 @RequiredArgsConstructor
 public class TripController {
 

@@ -1,6 +1,5 @@
 package com.zytra.user_server.seat.controller;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/seats")
+@RequestMapping("/user/seats")
 @RequiredArgsConstructor
 public class SeatController {
 
