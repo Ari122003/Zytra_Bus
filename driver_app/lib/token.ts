@@ -1,14 +1,17 @@
 import { jwtDecode } from 'jwt-decode';
 
-export const TOKEN_KEY = 'driver_auth_access_token';
-export const REFRESH_TOKEN_KEY = 'driver_auth_refresh_token';
-export const DRIVER_KEY = 'driver_auth_user';
+export const DRIVER_TOKEN_KEY = 'DRIVER_auth_access_token';
+export const DRIVER_REFRESH_TOKEN_KEY = 'DRIVER_auth_refresh_token';
+export const DRIVER_USER_KEY = 'DRIVER_auth_user';
+export const DRIVER_PROFILE_KEY = 'DRIVER_profile';
+export const DRIVER_TOKEN_EXPIRY_KEY = 'DRIVER_token_expiry';
 
 export const storageKeys = {
-  TOKEN: TOKEN_KEY,
-  REFRESH_TOKEN: REFRESH_TOKEN_KEY,
-  DRIVER: DRIVER_KEY,
-  DRIVER_PROFILE: 'driver_profile',
+  TOKEN: DRIVER_TOKEN_KEY,
+  REFRESH_TOKEN: DRIVER_REFRESH_TOKEN_KEY,
+  DRIVER: DRIVER_USER_KEY,
+  DRIVER_PROFILE: DRIVER_PROFILE_KEY,
+  TOKEN_EXPIRY: DRIVER_TOKEN_EXPIRY_KEY,
 } as const;
 
 interface DecodedToken {
@@ -23,11 +26,16 @@ interface DecodedToken {
  */
 export const tokenManager = {
   /**
-   * Store access token securely
+   * Store access token securely with expiry time
    */
-  setAccessToken: (token: string): void => {
+  setAccessToken: (token: string, expiresIn?: number | null): void => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(DRIVER_TOKEN_KEY, token);
+      if (expiresIn) {
+        // Store the expiry timestamp (current time + expiresIn seconds)
+        const expiryTime = Date.now() + expiresIn * 1000;
+        localStorage.setItem(DRIVER_TOKEN_EXPIRY_KEY, expiryTime.toString());
+      }
     }
   },
 
@@ -36,7 +44,18 @@ export const tokenManager = {
    */
   getAccessToken: (): string | null => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(TOKEN_KEY);
+      return localStorage.getItem(DRIVER_TOKEN_KEY);
+    }
+    return null;
+  },
+
+  /**
+   * Get stored token expiry timestamp
+   */
+  getTokenExpiry: (): number | null => {
+    if (typeof window !== 'undefined') {
+      const expiry = localStorage.getItem(DRIVER_TOKEN_EXPIRY_KEY);
+      return expiry ? parseInt(expiry, 10) : null;
     }
     return null;
   },
@@ -46,7 +65,7 @@ export const tokenManager = {
    */
   setRefreshToken: (token: string): void => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(REFRESH_TOKEN_KEY, token);
+      localStorage.setItem(DRIVER_REFRESH_TOKEN_KEY, token);
     }
   },
 
@@ -55,7 +74,7 @@ export const tokenManager = {
    */
   getRefreshToken: (): string | null => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem(REFRESH_TOKEN_KEY);
+      return localStorage.getItem(DRIVER_REFRESH_TOKEN_KEY);
     }
     return null;
   },
@@ -65,7 +84,7 @@ export const tokenManager = {
    */
   setDriver: (driver: Record<string, unknown> | { id: number | null; email: string; name?: string; phone?: string; imageUrl?: string; status: string }): void => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(DRIVER_KEY, JSON.stringify(driver));
+      localStorage.setItem(DRIVER_USER_KEY, JSON.stringify(driver));
     }
   },
 
@@ -74,7 +93,7 @@ export const tokenManager = {
    */
   getDriver: (): Record<string, unknown> | null => {
     if (typeof window !== 'undefined') {
-      const driver = localStorage.getItem(DRIVER_KEY);
+      const driver = localStorage.getItem(DRIVER_USER_KEY);
       return driver ? JSON.parse(driver) : null;
     }
     return null;
@@ -85,37 +104,35 @@ export const tokenManager = {
    */
   clearAuth: (): void => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-      localStorage.removeItem(DRIVER_KEY);
-      localStorage.removeItem(storageKeys.DRIVER_PROFILE);
+      localStorage.removeItem(DRIVER_TOKEN_KEY);
+      localStorage.removeItem(DRIVER_REFRESH_TOKEN_KEY);
+      localStorage.removeItem(DRIVER_USER_KEY);
+      localStorage.removeItem(DRIVER_PROFILE_KEY);
+      localStorage.removeItem(DRIVER_TOKEN_EXPIRY_KEY);
     }
   },
 
   /**
-   * Check if token is expired
+   * Check if token is expired using stored expiry time
    */
-  isTokenExpired: (token: string): boolean => {
-    try {
-      const decoded = jwtDecode<DecodedToken>(token);
-      const currentTime = Date.now() / 1000;
-      return decoded.exp < currentTime;
-    } catch {
+  isTokenExpired: (): boolean => {
+    const expiryTime = tokenManager.getTokenExpiry();
+    if (!expiryTime) {
       return true;
     }
+    return Date.now() >= expiryTime;
   },
 
   /**
-   * Check if token will expire soon (within 1 minute)
+   * Check if token will expire soon (default: within 2 minutes)
    */
-  willExpireSoon: (token: string, bufferSeconds: number = 60): boolean => {
-    try {
-      const decoded = jwtDecode<DecodedToken>(token);
-      const currentTime = Date.now() / 1000;
-      return decoded.exp - currentTime < bufferSeconds;
-    } catch {
+  willExpireSoon: (bufferSeconds: number = 120): boolean => {
+    const expiryTime = tokenManager.getTokenExpiry();
+    if (!expiryTime) {
       return true;
     }
+    const timeUntilExpiry = expiryTime - Date.now();
+    return timeUntilExpiry < bufferSeconds * 1000;
   },
 
   /**

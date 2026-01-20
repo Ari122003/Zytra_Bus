@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (refreshToken && driver) {
       // Check if access token is expired or missing
-      if (!accessToken || tokenManager.isTokenExpired(accessToken)) {
+      if (!accessToken || tokenManager.isTokenExpired()) {
         // Token expired or missing, try to refresh
         await refreshAuth();
       } else {
@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authApi.refreshToken({ refreshToken });
 
       if (response.accessToken && response.refreshToken) {
-        tokenManager.setAccessToken(response.accessToken);
+        tokenManager.setAccessToken(response.accessToken, response.expiresIn);
         tokenManager.setRefreshToken(response.refreshToken);
 
         const driver = tokenManager.getDriver() as Driver | null;
@@ -135,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (response.status === 'ACTIVE' && response.accessToken && response.refreshToken) {
       // Store tokens
-      tokenManager.setAccessToken(response.accessToken);
+      tokenManager.setAccessToken(response.accessToken, response.expiresIn);
       tokenManager.setRefreshToken(response.refreshToken);
 
       // Store driver data
@@ -167,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (response.status === 'ACTIVE' && response.accessToken && response.refreshToken) {
       // Store tokens
-      tokenManager.setAccessToken(response.accessToken);
+      tokenManager.setAccessToken(response.accessToken, response.expiresIn);
       tokenManager.setRefreshToken(response.refreshToken);
 
       // Store driver data
@@ -225,6 +225,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Auto-refresh token every 10 seconds if it will expire in 2 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const accessToken = tokenManager.getAccessToken();
+      const refreshToken = tokenManager.getRefreshToken();
+
+      // Only check if user is authenticated
+      if (accessToken && refreshToken && authState.isAuthenticated) {
+        // Check if token will expire in 2 minutes (120 seconds)
+        if (tokenManager.willExpireSoon(120)) {
+          console.log('Access token will expire soon, refreshing...');
+          refreshAuth();
+        }
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [authState.isAuthenticated, refreshAuth]);
 
   const value: AuthContextType = {
     ...authState,

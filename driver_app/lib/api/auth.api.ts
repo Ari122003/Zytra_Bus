@@ -39,7 +39,7 @@ export const authApi = {
    * Logout driver
    */
   logout: async (data: LogoutRequest): Promise<{ message: string }> => {
-    const response = await apiClient.post('/auth/logout', data);
+    const response = await apiClient.post('/logout', data);
     return response.data;
   },
 };

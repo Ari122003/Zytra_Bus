@@ -41,7 +41,7 @@ export default function RegisterPage() {
       const response = await register(validatedData);
 
       if (response.status === 'ACTIVE') {
-        // Successfully registered
+        // Successfully registered - navigate to home page
         router.push('/trips');
       } else if (response.status === 'PENDING_VERIFICATION') {
         setApiError("Your account is pending verification. Please contact support.");

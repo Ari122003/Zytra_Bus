@@ -1,10 +1,14 @@
 package com.zytra.user_server.driver_auth.service.impl;
 
+import com.zytra.user_server.driver_auth.dto.request.DriverRefreshTokenRequest;
+import com.zytra.user_server.driver_auth.dto.response.DriverLoginResponse;
 import com.zytra.user_server.driver_auth.entity.DriverRefreshTokenEntity;
 import com.zytra.user_server.driver.entity.DriverEntity;
-import com.zytra.user_server.auth.exception.InvalidCredentialException;
+import com.zytra.user_server.driver_auth.exception.DriverInvalidCredentialException;
 import com.zytra.user_server.driver_auth.repository.DriverRefreshTokenRepository;
+import com.zytra.user_server.driver.repository.DriverRepository;
 import com.zytra.user_server.driver_auth.service.DriverRefreshTokenService;
+import com.zytra.user_server.util.JwtUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,11 +20,21 @@ import java.util.Base64;
 @Service
 public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService {
 
-    private final DriverRefreshTokenRepository driverRefreshTokenRepository;
+    private static final int REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
-    public DriverRefreshTokenServiceImpl(DriverRefreshTokenRepository driverRefreshTokenRepository) {
+    private final DriverRefreshTokenRepository driverRefreshTokenRepository;
+    private final DriverRepository driverRepository;
+    private final JwtUtil jwtUtil;
+
+    public DriverRefreshTokenServiceImpl(DriverRefreshTokenRepository driverRefreshTokenRepository,
+            DriverRepository driverRepository,
+            JwtUtil jwtUtil) {
         this.driverRefreshTokenRepository = driverRefreshTokenRepository;
+        this.driverRepository = driverRepository;
+        this.jwtUtil = jwtUtil;
     }
+
+    // ==================== Token Lifecycle Methods ====================
 
     @Override
     @Transactional
@@ -34,9 +48,8 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
     public DriverRefreshTokenEntity createRefreshToken(Long driverId, String token, String deviceInfo,
             String ipAddress) {
         String tokenHash = hashToken(token);
-
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiry = now.plusDays(7);
+        LocalDateTime expiry = now.plusDays(REFRESH_TOKEN_EXPIRY_DAYS);
 
         DriverRefreshTokenEntity refreshToken = DriverRefreshTokenEntity.builder()
                 .tokenHash(tokenHash)
@@ -53,24 +66,15 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public DriverRefreshTokenEntity validateRefreshToken(String token) {
         String tokenHash = hashToken(token);
 
         DriverRefreshTokenEntity refreshToken = driverRefreshTokenRepository.findByTokenHash(tokenHash)
-                .orElseThrow(() -> new InvalidCredentialException("Invalid refresh token"));
+                .orElseThrow(() -> new DriverInvalidCredentialException("Invalid refresh token"));
 
-        if (refreshToken.isRevoked()) {
-            throw new InvalidCredentialException("Refresh token has been revoked");
-        }
-
-        if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new InvalidCredentialException("Refresh token has expired");
-        }
-
-        // Update last used timestamp
-        refreshToken.setLastUsedAt(LocalDateTime.now());
-        driverRefreshTokenRepository.save(refreshToken);
+        validateTokenState(refreshToken);
+        updateLastUsedTimestamp(refreshToken);
 
         return refreshToken;
     }
@@ -92,6 +96,57 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
     @Transactional
     public void cleanupExpiredTokens() {
         driverRefreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
+    }
+
+    // ==================== Business Logic Methods ====================
+
+    @Override
+    @Transactional
+    public DriverLoginResponse refreshToken(DriverRefreshTokenRequest request) {
+        DriverRefreshTokenEntity tokenEntity = validateRefreshToken(request.getRefreshToken());
+        DriverEntity driver = getDriverById(tokenEntity.getDriverId());
+
+        String newAccessToken = jwtUtil.generateAccessToken(driver);
+        String newRefreshToken = jwtUtil.generateRefreshToken(driver);
+        long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
+
+        rotateRefreshToken(request.getRefreshToken(), driver.getId(), newRefreshToken);
+
+        return new DriverLoginResponse("Token refreshed successfully", driver.getStatus(), driver.getId(),
+                newAccessToken, newRefreshToken, Long.valueOf(expiresIn));
+    }
+
+    @Override
+    @Transactional
+    public void logout(DriverRefreshTokenRequest request) {
+        revokeToken(request.getRefreshToken());
+    }
+
+    // ==================== Private Helper Methods ====================
+
+    private void validateTokenState(DriverRefreshTokenEntity refreshToken) {
+        if (refreshToken.isRevoked()) {
+            throw new DriverInvalidCredentialException("Refresh token has been revoked");
+        }
+
+        if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new DriverInvalidCredentialException("Refresh token has expired");
+        }
+    }
+
+    private void updateLastUsedTimestamp(DriverRefreshTokenEntity refreshToken) {
+        refreshToken.setLastUsedAt(LocalDateTime.now());
+        driverRefreshTokenRepository.save(refreshToken);
+    }
+
+    private DriverEntity getDriverById(Long driverId) {
+        return driverRepository.findById(driverId)
+                .orElseThrow(() -> new DriverInvalidCredentialException("Driver not found"));
+    }
+
+    private void rotateRefreshToken(String oldToken, Long driverId, String newToken) {
+        revokeToken(oldToken);
+        createRefreshToken(driverId, newToken, null, null);
     }
 
     private String hashToken(String token) {

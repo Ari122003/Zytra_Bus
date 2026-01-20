@@ -1,5 +1,7 @@
 package com.zytra.user_server.driver_auth.service;
 
+import com.zytra.user_server.driver_auth.dto.request.DriverRefreshTokenRequest;
+import com.zytra.user_server.driver_auth.dto.response.DriverLoginResponse;
 import com.zytra.user_server.driver_auth.entity.DriverRefreshTokenEntity;
 import com.zytra.user_server.driver.entity.DriverEntity;
 
@@ -35,4 +37,14 @@ public interface DriverRefreshTokenService {
      * Cleanup expired tokens (can be scheduled)
      */
     void cleanupExpiredTokens();
+
+    /**
+     * Refreshes access and refresh tokens using a valid refresh token
+     */
+    DriverLoginResponse refreshToken(DriverRefreshTokenRequest request);
+
+    /**
+     * Logs out a driver by revoking their refresh token
+     */
+    void logout(DriverRefreshTokenRequest request);
 }

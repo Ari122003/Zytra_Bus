@@ -90,6 +90,13 @@ public class DriverAuthServiceImpl implements DriverAuthService {
     @Transactional
     public DriverRegisterResponse register(DriverRegisterRequest request) {
 
+        if (request == null || request.getEmail() == null || request.getEmail().isBlank()) {
+            throw new DriverInvalidCredentialException("Email is required");
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new DriverInvalidCredentialException("Password is required");
+        }
+
         // Check if driver already exists
         if (driverRepository.existsByEmail(request.getEmail())) {
             throw new DriverAlreadyExistsException("Driver with this email already exists");
@@ -99,22 +106,43 @@ public class DriverAuthServiceImpl implements DriverAuthService {
         String encryptedPassword = PasswordUtil.encrypt(request.getPassword());
 
         // Create new driver entity
-        DriverEntity driver = new DriverEntity();
-        driver.setName(request.getName());
-        driver.setEmail(request.getEmail());
-        driver.setPhone(request.getPhone());
-        driver.setPasswordHash(encryptedPassword);
-        driver.setStatus(DriverStatus.ACTIVE);
-        driver.setRole(UserRole.DRIVER);
-        driver.setAssignedRoute(null); // Will be assigned later by admin
+        DriverEntity driver = DriverEntity.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .passwordHash(encryptedPassword)
+                .status(DriverStatus.ACTIVE)
+                .role(UserRole.DRIVER)
+                .assignedRoute(null) // Will be assigned later by admin
+                .build();
 
-        // Save driver to database
+        if (driver.getStatus() != DriverStatus.ACTIVE) {
+            throw new DriverInvalidAccountException(
+                    "Driver account is " + driver.getStatus().name() + ", cannot login");
+        }
+
+        // Save driver to database first to generate ID
         DriverEntity savedDriver = driverRepository.save(driver);
+
+        // Generate tokens
+        String accessToken = jwtUtil.generateAccessToken(savedDriver);
+        String refreshToken = jwtUtil.generateRefreshToken(savedDriver);
+        long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
+
+        // Persist refresh token - using driver ID
+        driverRefreshTokenService.createRefreshToken(savedDriver.getId(), refreshToken, null, null);
+
+        // Update last login timestamp
+        savedDriver.setLastLoginAt(LocalDateTime.now());
+        driverRepository.save(savedDriver);
 
         return DriverRegisterResponse.builder()
                 .message("Driver registered successfully")
+                .status(savedDriver.getStatus())
                 .driverId(savedDriver.getId())
-                .email(savedDriver.getEmail())
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .expiresIn(expiresIn)
                 .build();
     }
 }
