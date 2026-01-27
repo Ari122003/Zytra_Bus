@@ -12,25 +12,31 @@ import com.zytra.user_server.bookings.entity.BookingEntity;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
 
-    @Query("SELECT new com.zytra.user_server.bookings.dto.BookingDetails(b.id, r.source, r.destination, t.travelDate, s.departureTime, s.arrivalTime, b.seatCount) "
-            +
-            "FROM BookingEntity b " +
-            "JOIN b.trip t " +
-            "JOIN t.schedule s " +
-            "JOIN s.route r " +
-            "WHERE b.user.id = :userId")
-    List<BookingDetails> findBookingDetailsByUserId(@Param("userId") Long userId);
+        @Query("SELECT new com.zytra.user_server.bookings.dto.BookingDetails(b.id, r.source, r.destination, t.travelDate, s.departureTime, s.arrivalTime, b.seatCount) "
+                        +
+                        "FROM BookingEntity b " +
+                        "JOIN b.trip t " +
+                        "JOIN t.schedule s " +
+                        "JOIN s.route r " +
+                        "WHERE b.user.id = :userId")
+        List<BookingDetails> findBookingDetailsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT b FROM BookingEntity b WHERE b.id = :bookingId")
-    Optional<BookingEntity> findById(@Param("bookingId") Long bookingId);
+        @Query("SELECT b FROM BookingEntity b WHERE b.id = :bookingId")
+        Optional<BookingEntity> findById(@Param("bookingId") Long bookingId);
 
-    @Query("SELECT b FROM BookingEntity b " +
-            "LEFT JOIN FETCH b.trip t " +
-            "LEFT JOIN FETCH t.schedule s " +
-            "LEFT JOIN FETCH s.route r " +
-            "LEFT JOIN FETCH s.bus bus " +
-            "LEFT JOIN FETCH t.driver d " +
-            "WHERE b.id = :bookingId")
-    Optional<BookingEntity> findByIdWithDetails(@Param("bookingId") Long bookingId);
+        @Query("SELECT b FROM BookingEntity b " +
+                        "LEFT JOIN FETCH b.trip t " +
+                        "LEFT JOIN FETCH t.schedule s " +
+                        "LEFT JOIN FETCH s.route r " +
+                        "LEFT JOIN FETCH s.bus bus " +
+                        "LEFT JOIN FETCH t.driver d " +
+                        "WHERE b.id = :bookingId")
+        Optional<BookingEntity> findByIdWithDetails(@Param("bookingId") Long bookingId);
+
+        @Query("SELECT b FROM BookingEntity b " +
+                        "JOIN FETCH b.user " +
+                        "LEFT JOIN FETCH b.ticket " +
+                        "WHERE b.trip.id = :tripId")
+        List<BookingEntity> findByTripIdWithUser(@Param("tripId") Long tripId);
 
 }

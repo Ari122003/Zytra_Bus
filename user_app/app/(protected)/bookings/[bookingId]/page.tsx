@@ -69,9 +69,16 @@ const getStatusInfo = (status: string) => {
     case 'confirmed':
       return {
         icon: CheckCircle2,
+        color: 'text-slate-700 dark:text-slate-300',
+        bgColor: 'bg-slate-200 dark:bg-slate-800/50',
+        label: 'Confirmed',
+      }
+    case 'verified':
+      return {
+        icon: CheckCircle2,
         color: 'text-green-600 dark:text-green-400',
         bgColor: 'bg-green-100 dark:bg-green-900/30',
-        label: 'Confirmed',
+        label: 'Verified',
       }
     case 'pending':
       return {

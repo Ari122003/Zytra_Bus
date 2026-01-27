@@ -173,8 +173,8 @@ public class BookingServiceImpl implements BookingService {
                 .busNumber(booking.getTrip().getSchedule().getBus().getBusNumber())
                 .ticketQr(ticket.getQrCodeData())
                 .bookingStatus(booking.getBookingStatus().name())
-                .driverName("XXXXXXXXXXXXXXXX")
-                .driverContact("1111111111")
+                .driverName(booking.getTrip().getDriver().getName())
+                .driverContact(booking.getTrip().getDriver().getPhone())
                 .build();
 
         return response;

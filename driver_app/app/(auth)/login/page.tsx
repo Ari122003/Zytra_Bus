@@ -46,6 +46,8 @@ export default function LoginPage() {
         setApiError("Your account is pending verification. Please contact support.");
       }
     } catch (error) {
+      console.log('Login error:', error);
+      
       if (error instanceof z.ZodError) {
         // Handle validation errors
         const fieldErrors: Partial<Record<keyof LoginFormData, string>> = {};
@@ -54,28 +56,40 @@ export default function LoginPage() {
           fieldErrors[path] = issue.message;
         });
         setErrors(fieldErrors);
-      } else if (error instanceof AxiosError) {
+      } else {
+        // Handle Axios errors
         const axiosError = error as AxiosError<ErrorResponse>;
         
         if (axiosError.response?.data) {
           const errorData = axiosError.response.data;
+          console.log('Error data:', errorData);
           
-          if (errorData.errors) {
+          // Check for field-specific errors
+          if (errorData.errors && Object.keys(errorData.errors).length > 0) {
             const fieldErrors: Partial<Record<keyof LoginFormData, string>> = {};
             Object.entries(errorData.errors).forEach(([field, message]) => {
               fieldErrors[field as keyof LoginFormData] = message;
             });
             setErrors(fieldErrors);
-          } else {
-            setApiError(errorData.message || "An error occurred during login");
+          } 
+          // Check for general error message
+          else if (errorData.message) {
+            setApiError(errorData.message);
+          } 
+          // Fallback to error field if message is not available
+          else if (errorData.error) {
+            setApiError(errorData.error);
+          }
+          else {
+            setApiError("An error occurred during login");
           }
         } else if (axiosError.request) {
           setApiError("Network error. Please check your connection and try again.");
+        } else if (axiosError.message) {
+          setApiError(axiosError.message);
         } else {
           setApiError("An unexpected error occurred. Please try again.");
         }
-      } else {
-        setApiError("An unexpected error occurred. Please try again.");
       }
     } finally {
       setIsSubmitting(false);

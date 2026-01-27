@@ -11,4 +11,6 @@ public interface DriverRepository extends JpaRepository<DriverEntity, Long> {
     Optional<DriverEntity> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    boolean existsById(Long id);
 }

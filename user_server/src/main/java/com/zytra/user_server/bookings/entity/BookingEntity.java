@@ -1,6 +1,7 @@
 package com.zytra.user_server.bookings.entity;
 
 import com.zytra.user_server.enums.BookingStatus;
+import com.zytra.user_server.tickets.entity.TicketEntity;
 import com.zytra.user_server.trips.entity.TripEntity;
 import com.zytra.user_server.user.entity.UserEntity;
 
@@ -47,6 +48,9 @@ public class BookingEntity {
         @Enumerated(EnumType.STRING)
         @Column(name = "booking_status", length = 20)
         private BookingStatus bookingStatus;
+
+        @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)
+        private TicketEntity ticket;
 
         @CreationTimestamp
         @Column(name = "created_at", updatable = false)

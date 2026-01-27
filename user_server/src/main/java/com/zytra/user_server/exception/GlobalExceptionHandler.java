@@ -11,6 +11,9 @@ import com.zytra.user_server.auth.dto.response.ErrorResponse;
 import com.zytra.user_server.auth.exception.InvalidCredentialException;
 import com.zytra.user_server.auth.exception.InvalidOtpException;
 import com.zytra.user_server.auth.exception.InvalidUserException;
+import com.zytra.user_server.driver_auth.exception.DriverAlreadyExistsException;
+import com.zytra.user_server.driver_auth.exception.DriverInvalidAccountException;
+import com.zytra.user_server.driver_auth.exception.DriverInvalidCredentialException;
 import com.zytra.user_server.bookings.exception.InvalidSeatSelectionException;
 import com.zytra.user_server.bookings.exception.NoBookingFoundException;
 import com.zytra.user_server.bookings.exception.SeatAlreadyBookedException;
@@ -239,6 +242,37 @@ public class GlobalExceptionHandler {
         return ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    // Driver Auth Exception Handlers
+    @ExceptionHandler(DriverAlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleDriverAlreadyExistsException(DriverAlreadyExistsException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(DriverInvalidCredentialException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErrorResponse handleDriverInvalidCredentialException(DriverInvalidCredentialException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .message(ex.getMessage())
+                .build();
+    }
+
+    @ExceptionHandler(DriverInvalidAccountException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleDriverInvalidAccountException(DriverInvalidAccountException ex) {
+        return ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.FORBIDDEN.value())
                 .message(ex.getMessage())
                 .build();
     }

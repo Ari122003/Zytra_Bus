@@ -32,12 +32,7 @@ public class CreateTicketService implements TicketService {
         try {
             String ticketNumber = ticketNumberService.generateTicketNumber(20);
 
-            String qrCodeData = "Ticket Number: " + ticketNumber +
-                    "\nBooking ID: " + booking.getId() +
-                    "\nUser ID: " + booking.getUser().getId() +
-                    "\nTrip ID: " + booking.getTrip().getId();
-
-            BufferedImage qrCodeImage = qrCodeService.generateQRCode(qrCodeData);
+            BufferedImage qrCodeImage = qrCodeService.generateQRCode(ticketNumber);
 
             // Encode QR image to PNG and store as Base64 string
             String qrCodeBase64;
