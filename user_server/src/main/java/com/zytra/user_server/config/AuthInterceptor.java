@@ -43,7 +43,6 @@ public class AuthInterceptor implements HandlerInterceptor {
             UserRole userRole = UserRole.valueOf(roleStr);
             String requestPath = request.getRequestURI();
 
-            // Check role-based access
             if (requestPath.startsWith("/user/") && userRole != UserRole.USER) {
                 response.setStatus(HttpStatus.FORBIDDEN.value());
                 response.getWriter().write("Access denied: User role required");
@@ -56,7 +55,6 @@ public class AuthInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            // Set authentication attributes
             request.setAttribute("authenticatedUser", email);
             request.setAttribute("authenticatedUserId", userId);
             request.setAttribute("authenticatedUserRole", userRole);

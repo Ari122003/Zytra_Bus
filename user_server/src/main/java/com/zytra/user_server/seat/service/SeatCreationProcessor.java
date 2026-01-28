@@ -24,24 +24,29 @@ public class SeatCreationProcessor {
     private final SeatRepository seatRepository;
     private final TripRepository tripRepository;
 
-    private static final int TOTAL_ROWS = 12; // Rows A-L
-    private static final int SEATS_PER_ROW = 4; // 2x2 layout
+    private static final int TOTAL_ROWS = 12;
+    private static final int SEATS_PER_ROW = 4;
     private static final String[] ROW_LABELS = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" };
 
+    /**
+     * Creates all seats for a single trip in a new transaction.
+     * Performs idempotent checks to prevent duplicate seat creation.
+     * Marks trip as INITIALIZING during creation, then INITIALIZED upon completion.
+     * Creates 48 seats (12 rows x 4 seats) for the trip.
+     * 
+     * @param trip the trip entity for which to create seats
+     */
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void createSeatsForSingleTrip(TripEntity trip) {
-        // Double safety check (idempotent)
 
         if (trip.getSeatStatus() == TripSeatStatus.INITIALIZED) {
             return;
         }
 
         if (trip.getSeatStatus() == TripSeatStatus.INITIALIZING) {
-            // Another process is initializing
             return;
         }
 
-        // Mark as initializing (prevents race conditions)
         trip.setSeatStatus(TripSeatStatus.INITIALIZING);
         tripRepository.save(trip);
 

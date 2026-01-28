@@ -18,22 +18,13 @@ interface DecodedToken {
   [key: string]: unknown;
 }
 
-/**
- * Token management utilities for secure storage and retrieval
- */
 export const tokenManager = {
-  /**
-   * Store access token securely
-   */
   setAccessToken: (token: string): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_KEY, token);
     }
   },
 
-  /**
-   * Get stored access token
-   */
   getAccessToken: (): string | null => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem(TOKEN_KEY);
@@ -41,18 +32,12 @@ export const tokenManager = {
     return null;
   },
 
-  /**
-   * Store refresh token securely
-   */
   setRefreshToken: (token: string): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(REFRESH_TOKEN_KEY, token);
     }
   },
 
-  /**
-   * Get stored refresh token
-   */
   getRefreshToken: (): string | null => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem(REFRESH_TOKEN_KEY);
@@ -60,18 +45,12 @@ export const tokenManager = {
     return null;
   },
 
-  /**
-   * Store user data
-   */
   setUser: (user: Record<string, unknown> | { id: number | null; email: string; name?: string; imageUrl?: string; status: string }): void => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(USER_KEY, JSON.stringify(user));
     }
   },
 
-  /**
-   * Get stored user data
-   */
   getUser: (): Record<string, unknown> | null => {
     if (typeof window !== 'undefined') {
       const user = localStorage.getItem(USER_KEY);
@@ -80,9 +59,6 @@ export const tokenManager = {
     return null;
   },
 
-  /**
-   * Clear all auth data
-   */
   clearAuth: (): void => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(TOKEN_KEY);
@@ -91,9 +67,7 @@ export const tokenManager = {
     }
   },
 
-  /**
-   * Check if token is expired
-   */
+  // Checks if JWT token has expired by comparing exp timestamp with current time
   isTokenExpired: (token: string): boolean => {
     try {
       const decoded = jwtDecode<DecodedToken>(token);
@@ -104,9 +78,7 @@ export const tokenManager = {
     }
   },
 
-  /**
-   * Check if token will expire soon (within 1 minute)
-   */
+  // Checks if token will expire within bufferSeconds (default 60s) for proactive refresh
   willExpireSoon: (token: string, bufferSeconds: number = 60): boolean => {
     try {
       const decoded = jwtDecode<DecodedToken>(token);
@@ -117,9 +89,6 @@ export const tokenManager = {
     }
   },
 
-  /**
-   * Decode token and return payload
-   */
   decodeToken: <T = DecodedToken>(token: string): T | null => {
     try {
       return jwtDecode<T>(token);

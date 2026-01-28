@@ -15,7 +15,7 @@ public class DriverLoginResponse {
     private Long driverId;
     private String accessToken;
     private String refreshToken;
-    private Long expiresIn; // seconds
+    private Long expiresIn;
 
     public DriverLoginResponse(String message, DriverStatus status) {
         this.message = message;

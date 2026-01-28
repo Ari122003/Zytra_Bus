@@ -18,14 +18,10 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-/**
- * UserProvider component to manage user profile data separately from auth
- */
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user profile from localStorage on mount
   useEffect(() => {
     try {
       const stored = localStorage.getItem(storageKeys.USER_PROFILE);
@@ -39,7 +35,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Save to localStorage whenever profile changes
   const setUserProfile = useCallback((profile: UserProfile | null) => {
     setUserProfileState(profile);
     if (profile) {
@@ -49,7 +44,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Update specific fields of user profile
   const updateUserProfile = useCallback((updates: Partial<Omit<UserProfile, 'id'>>) => {
     setUserProfileState(prev => {
       if (!prev) return prev;
@@ -62,7 +56,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  // Clear user profile
   const clearUserProfile = useCallback(() => {
     setUserProfileState(null);
     localStorage.removeItem(storageKeys.USER_PROFILE);
@@ -79,9 +72,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
-/**
- * Hook to use user profile context
- */
 export const useUserProfile = () => {
   const context = useContext(UserContext);
   

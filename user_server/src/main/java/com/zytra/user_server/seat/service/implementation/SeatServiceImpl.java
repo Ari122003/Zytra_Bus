@@ -36,11 +36,30 @@ public class SeatServiceImpl implements SeatService {
 
     private static final int LOCK_DURATION_MINUTES = 10;
 
+    /**
+     * Locks the specified seats for a trip on behalf of a user.
+     * Validates seat availability, removes expired locks, ensures seats are not
+     * already locked by others,
+     * unlocks previously locked seats that are not in the current selection, and
+     * locks the selected seats.
+     * 
+     * @param tripId    the ID of the trip
+     * @param seats     array of seat numbers to lock
+     * @param lockOwner the ID of the user requesting the lock
+     * @return LockSeatsResponse containing locked seat numbers and lock expiration
+     *         time
+     * @throws LockOwnerRequiredException if lockOwner is null
+     * @throws UserNotFoundException      if user with lockOwner ID is not found
+     * @throws NoSeatsSpecifiedException  if seats array is null or empty
+     * @throws InvalidSeatException       if one or more selected seats are invalid
+     * @throws SeatAlreadyLockedException if a seat is already locked by another
+     *                                    user
+     * @throws SeatNotAvailableException  if a seat is already booked
+     */
     @Override
     @Transactional
     public LockSeatsResponse lockSeats(long tripId, String[] seats, Long lockOwner) {
 
-        // resolve lockOwner id -> UserEntity
         if (lockOwner == null) {
             throw new LockOwnerRequiredException("Lock owner id is required");
         }
@@ -71,7 +90,6 @@ public class SeatServiceImpl implements SeatService {
 
         for (SeatEntity seat : existingSeats) {
 
-            // Removing expired locks before attempting to lock
             if (seat.getLockedUntil() != null && seat.getLockedUntil().isBefore(now)) {
 
                 seat.setStatus(SeatStatus.AVAILABLE);
@@ -79,7 +97,6 @@ public class SeatServiceImpl implements SeatService {
                 seat.setLockOwner(null);
             }
 
-            // Already locked by someone else
             if (seat.getLockedUntil() != null && seat.getLockedUntil().isAfter(now) &&
                     !seat.getLockOwner().getId().equals(lockOwner)) {
 
@@ -87,13 +104,10 @@ public class SeatServiceImpl implements SeatService {
                         "Seat " + seat.getSeatNumber() + " is already locked by another user");
             }
 
-            // Booked seat
             if (seat.getStatus() == SeatStatus.BOOKED) {
                 throw new SeatNotAvailableException("Seat " + seat.getSeatNumber() + " is already booked");
             }
 
-            // if seat is locked by the same user and lock not expired and seat is not in
-            // current locks then unlock it
             if (seat.getLockedUntil() != null && seat.getLockedUntil().isAfter(now) &&
                     seat.getLockOwner().getId().equals(lockOwner) &&
                     !currentLocks.contains(seat)) {
@@ -104,14 +118,11 @@ public class SeatServiceImpl implements SeatService {
                 continue;
             }
 
-            // Lock seat
             seat.setLockOwner(user);
             seat.setLockedUntil(now.plusMinutes(LOCK_DURATION_MINUTES));
         }
 
         seatRepository.saveAll(existingSeats);
-
-        // Prepare response
 
         String[] lockedSeatNumbers = existingSeats.stream()
                 .map(SeatEntity::getSeatNumber)

@@ -56,6 +56,26 @@ public class BusServiceImpl implements BusService {
     @Value("${fare.per.km:2.5}")
     private BigDecimal farePerKm;
 
+    /**
+     * Searches for available buses between source and destination on a specific
+     * date.
+     * Validates travel date is within booking window, finds matching route,
+     * retrieves active schedules,
+     * filters out past departure times for today's date, creates or retrieves
+     * trips, and calculates fares.
+     * Returns sorted results by departure time with available seats.
+     * 
+     * @param source      the departure location
+     * @param destination the arrival location
+     * @param travelDate  the date of travel
+     * @param currentTime the current time for filtering today's trips
+     * @return SearchBusesResponse containing list of available bus trips
+     * @throws InvalidTravelDateException if travel date is in the past or beyond
+     *                                    booking window
+     * @throws RouteNotFoundException     if no route exists between source and
+     *                                    destination
+     * @throws NoBusAvailableException    if no schedules are found for the route
+     */
     @Override
     @Transactional
     public SearchBusesResponse searchBuses(String source, String destination, LocalDate travelDate,
@@ -72,13 +92,11 @@ public class BusServiceImpl implements BusService {
                     "Booking allowed only up to " + bookingWindowDays + " days in advance");
         }
 
-        // Case-insensitive search for route
         RouteEntity route = routeRepository.findBySourceIgnoreCaseAndDestinationIgnoreCase(
                 source.trim(), destination.trim())
                 .orElseThrow(() -> new RouteNotFoundException(
                         "No route found from " + source + " to " + destination));
 
-        // Fetch schedules with bus eagerly loaded to avoid N+1 queries
         List<ScheduleEntity> schedules = scheduleRepository
                 .findActiveSchedulesByRouteAndDate(route, travelDate, ScheduleStatus.ACTIVE)
                 .orElse(List.of());
@@ -88,7 +106,6 @@ public class BusServiceImpl implements BusService {
                     "No bus available for route from " + source + " to " + destination);
         }
 
-        // Filter by departure time if travel date is today
         boolean isToday = travelDate.isEqual(today);
         if (isToday) {
             schedules = schedules.stream()
@@ -100,7 +117,6 @@ public class BusServiceImpl implements BusService {
             return SearchBusesResponse.builder().results(List.of()).build();
         }
 
-        // Batch fetch existing trips to avoid N+1 queries
         Set<Long> scheduleIds = schedules.stream()
                 .map(ScheduleEntity::getId)
                 .collect(Collectors.toSet());
@@ -113,11 +129,9 @@ public class BusServiceImpl implements BusService {
                         trip -> trip.getSchedule().getId(),
                         Function.identity()));
 
-        // Calculate fare based on distance
         BigDecimal calculatedFare = farePerKm.multiply(BigDecimal.valueOf(route.getDistanceKm()));
 
         List<TripEntity> trips = new ArrayList<>();
-        List<TripEntity> newTripsToSave = new ArrayList<>();
 
         for (ScheduleEntity schedule : schedules) {
             TripEntity trip = existingTrips.get(schedule.getId());
@@ -125,22 +139,18 @@ public class BusServiceImpl implements BusService {
             if (trip != null) {
                 trips.add(trip);
             } else {
-                TripEntity newTrip = tripCreationService.createTripWithSeats(
+                TripEntity tripEntity = tripCreationService.findOrCreateTrip(
                         schedule,
                         travelDate,
                         calculatedFare);
-                trips.add(newTrip);
+                if (tripEntity != null) {
+                    trips.add(tripEntity);
+                }
             }
         }
 
-        // Batch save new trips
-        if (!newTripsToSave.isEmpty()) {
-            tripRepository.saveAll(newTripsToSave);
-        }
-
-        // Build results sorted by departure time
         List<SearchBusesResponse.BusResult> results = trips.stream()
-                .filter(trip -> trip.getAvailableSeats() > 0) // Only show buses with available seats
+                .filter(trip -> trip.getAvailableSeats() > 0)
                 .sorted(Comparator.comparing(trip -> trip.getSchedule().getDepartureTime()))
                 .map(trip -> {
                     ScheduleEntity schedule = trip.getSchedule();

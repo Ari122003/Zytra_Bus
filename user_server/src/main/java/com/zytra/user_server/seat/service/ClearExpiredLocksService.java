@@ -19,7 +19,9 @@ public class ClearExpiredLocksService {
     private final SeatRepository seatRepository;
 
     /**
-     * Runs every 30 seconds to release expired seat locks.
+     * Scheduled task that runs every 30 seconds to release expired seat locks.
+     * Frees up seats that have passed their lock expiration time, making them
+     * available for other users.
      */
     @Scheduled(fixedRate = 30_000)
     @Transactional

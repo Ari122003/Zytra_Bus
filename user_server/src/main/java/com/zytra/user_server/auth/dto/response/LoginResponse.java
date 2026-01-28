@@ -13,7 +13,7 @@ public class LoginResponse {
     private Long userId;
     private String accessToken;
     private String refreshToken;
-    private Long expiresIn; // seconds
+    private Long expiresIn;
 
     public LoginResponse(String message, UserStatus status) {
         this.message = message;

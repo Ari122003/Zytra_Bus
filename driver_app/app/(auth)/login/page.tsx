@@ -29,15 +29,12 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate form data
       const data = { email, password };
       const validatedData = loginSchema.parse(data);
 
-      // Call login API
       const response = await login(validatedData);
 
       if (response.status === 'ACTIVE') {
-        // Successfully logged in
         sessionStorage.removeItem('redirectAfterLogin');
         router.push('/trips');
       } else if (response.status === 'BLOCKED') {
@@ -49,7 +46,6 @@ export default function LoginPage() {
       console.log('Login error:', error);
       
       if (error instanceof z.ZodError) {
-        // Handle validation errors
         const fieldErrors: Partial<Record<keyof LoginFormData, string>> = {};
         error.issues.forEach((issue) => {
           const path = issue.path[0] as keyof LoginFormData;
@@ -57,14 +53,12 @@ export default function LoginPage() {
         });
         setErrors(fieldErrors);
       } else {
-        // Handle Axios errors
         const axiosError = error as AxiosError<ErrorResponse>;
         
         if (axiosError.response?.data) {
           const errorData = axiosError.response.data;
           console.log('Error data:', errorData);
           
-          // Check for field-specific errors
           if (errorData.errors && Object.keys(errorData.errors).length > 0) {
             const fieldErrors: Partial<Record<keyof LoginFormData, string>> = {};
             Object.entries(errorData.errors).forEach(([field, message]) => {
@@ -72,11 +66,9 @@ export default function LoginPage() {
             });
             setErrors(fieldErrors);
           } 
-          // Check for general error message
           else if (errorData.message) {
             setApiError(errorData.message);
           } 
-          // Fallback to error field if message is not available
           else if (errorData.error) {
             setApiError(errorData.error);
           }

@@ -20,6 +20,11 @@ public class SeatCreationService {
     private final TripRepository tripRepository;
     private final SeatCreationProcessor seatCreationProcessor;
 
+    /**
+     * Scheduled task that runs every 30 seconds to initialize seats for trips that
+     * are not yet initialized.
+     * Finds all trips with status NOT_INITIALIZED and creates seats for each trip.
+     */
     @Scheduled(fixedRate = 30000)
     public void initializeSeatsForTrip() {
 

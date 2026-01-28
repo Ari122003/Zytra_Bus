@@ -7,13 +7,8 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 
 import com.zytra.user_server.bus.entity.BusEntity;
 import com.zytra.user_server.enums.SeatStatus;
@@ -38,13 +33,24 @@ import lombok.RequiredArgsConstructor;
 public class TripServiceImpl implements TripService {
 
     private static final Logger log = LoggerFactory.getLogger(TripServiceImpl.class);
-    private static final int TOTAL_ROWS = 12; // Rows A-L
-    private static final int SEATS_PER_ROW = 4; // 2x2 layout
+    private static final int TOTAL_ROWS = 12;
+    private static final int SEATS_PER_ROW = 4;
     private static final String[] ROW_LABELS = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" };
 
     private final TripRepository tripRepository;
     private final SeatRepository seatRepository;
 
+    /**
+     * Retrieves detailed information about a trip including schedule, route, bus
+     * details, and seat matrix.
+     * Validates that the trip exists and is not cancelled before returning the
+     * details.
+     * 
+     * @param tripId the ID of the trip to retrieve
+     * @return TripResponse containing all trip details and seat availability
+     * @throws TripNotFoundException  if trip with given ID is not found
+     * @throws TripCancelledException if trip is cancelled
+     */
     @Override
     @Transactional(readOnly = true)
     public TripResponse getTripDetails(Long tripId) {
@@ -65,7 +71,6 @@ public class TripServiceImpl implements TripService {
         RouteEntity route = schedule.getRoute();
         BusEntity bus = schedule.getBus();
 
-        // Fetch seats for the trip and build seat matrix
         List<List<SeatDTO>> seatMatrix = buildSeatMatrix(tripEntity);
 
         int availableSeats = tripEntity.getAvailableSeats();
@@ -96,14 +101,15 @@ public class TripServiceImpl implements TripService {
     /**
      * Builds a 2D seat matrix from the seats stored in the database.
      * Layout: 12 rows (A-L), 4 seats per row (2x2 configuration).
-     * Seat numbers: A1, A2, A3, A4, B1, B2, B3, B4, ..., L1, L2, L3, L4
+     * Seat numbers: A1, A2, A3, A4, B1, B2, B3, B4, ..., L1, L2, L3, L4.
+     * Handles duplicates by taking the first occurrence.
+     * 
+     * @param tripEntity the trip entity for which to build the seat matrix
+     * @return 2D list representing the seat matrix
      */
     private List<List<SeatDTO>> buildSeatMatrix(TripEntity tripEntity) {
         List<SeatEntity> seats = seatRepository.findByTripOrderBySeatNumber(tripEntity);
 
-        // Create a map for quick lookup of existing seats
-        // Handle duplicates by taking the first occurrence (LinkedHashMap preserves
-        // insertion order)
         Map<String, SeatEntity> seatMap = new LinkedHashMap<>();
         for (SeatEntity seat : seats) {
             seatMap.putIfAbsent(seat.getSeatNumber(), seat);

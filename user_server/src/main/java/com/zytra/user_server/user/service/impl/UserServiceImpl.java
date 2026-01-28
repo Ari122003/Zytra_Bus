@@ -21,8 +21,14 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
-    // Get user information
-
+    /**
+     * Retrieves detailed information about a user by their ID.
+     * Validates that the user exists and has an ACTIVE status.
+     * 
+     * @param userId the ID of the user to retrieve
+     * @return GetUserDetailsResponse containing user details
+     * @throws UserNotFoundException if user is not found or not active
+     */
     @Override
     @Transactional(readOnly = true)
     public GetUserDetailsResponse getUserDetails(Long userId) {
@@ -43,8 +49,15 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    // update user image
-
+    /**
+     * Updates the image URL for a user.
+     * Validates that the user exists and has an ACTIVE status before updating.
+     * 
+     * @param userId   the ID of the user to update
+     * @param imageUrl the new image URL
+     * @return UpdateUserImageResponse confirming the update
+     * @throws UserNotFoundException if user is not found or not active
+     */
     @Override
     @Transactional
     public UpdateUserImageResponse updateUserImage(Long userId, String imageUrl) {
@@ -63,8 +76,15 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    // update user info (name and dob)
-
+    /**
+     * Updates user information including name and date of birth.
+     * Validates that the user exists and has an ACTIVE status before updating.
+     * 
+     * @param userId  the ID of the user to update
+     * @param request the UpdateInfoRequest containing name and date of birth
+     * @return UpdateInfoResponse confirming the update
+     * @throws UserNotFoundException if user is not found or not active
+     */
     @Override
     @Transactional
     public UpdateInfoResponse updateUserInfo(Long userId, UpdateInfoRequest request) {

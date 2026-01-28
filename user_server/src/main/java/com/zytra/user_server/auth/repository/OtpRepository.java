@@ -9,7 +9,6 @@ import com.zytra.user_server.auth.entity.OtpEntity;
 import java.util.Optional;
 
 @Repository
-
 public interface OtpRepository extends JpaRepository<OtpEntity, Long> {
 
     @Modifying

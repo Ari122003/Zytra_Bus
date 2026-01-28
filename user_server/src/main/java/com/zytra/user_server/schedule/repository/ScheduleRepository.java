@@ -14,15 +14,13 @@ import com.zytra.user_server.routes.entity.RouteEntity;
 import com.zytra.user_server.schedule.entity.ScheduleEntity;
 
 @Repository
-
 public interface ScheduleRepository extends JpaRepository<ScheduleEntity, Long> {
 
         Optional<List<ScheduleEntity>> findByRoute(RouteEntity route);
 
         /**
-         * Find active schedules for a route with bus eagerly loaded.
-         * Filters by schedule status and ensures travel date falls within active
-         * period.
+         * Fetches active schedules for a route with bus eagerly loaded, filtered by
+         * schedule status and travel date within active period
          */
         @Query("SELECT s FROM ScheduleEntity s " +
                         "JOIN FETCH s.bus " +

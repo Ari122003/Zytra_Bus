@@ -9,6 +9,10 @@ import com.zytra.user_server.tickets.entity.TicketEntity;
 
 public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
 
+    /**
+     * Fetches ticket by booking ID
+     */
     @Query("SELECT t FROM TicketEntity t WHERE t.booking.id = :bookingId")
     Optional<TicketEntity> findByBookingId(Long bookingId);
+
 }

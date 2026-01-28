@@ -53,11 +53,28 @@ public class BookingServiceImpl implements BookingService {
     private final TicketService ticketService;
     private final TicketRepository ticketRepository;
 
+    /**
+     * Processes a booking for selected seats on a trip.
+     * Validates trip and user existence, verifies seat locks belong to user, checks
+     * lock expiry,
+     * creates booking record, updates seat statuses to BOOKED, generates ticket,
+     * and updates trip availability.
+     * 
+     * @param tripId      the ID of the trip
+     * @param userId      the ID of the user making the booking
+     * @param seatNumbers array of seat numbers to book
+     * @param amount      the total booking amount
+     * @return BookingResponse confirming successful booking
+     * @throws TripNotFoundException         if trip is not found
+     * @throws UserNotFoundException         if user is not found
+     * @throws InvalidSeatSelectionException if seats are invalid or not locked by
+     *                                       user
+     * @throws SeatAlreadyBookedException    if any seat is already booked
+     * @throws SeatLockExpiredException      if seat lock has expired
+     */
     @Override
     @Transactional
     public BookingResponse processBooking(Long tripId, Long userId, String[] seatNumbers, BigDecimal amount) {
-        // Implementation logic for processing the booking
-
         TripEntity trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new TripNotFoundException("Trip not found with id: " + tripId));
 
@@ -94,16 +111,13 @@ public class BookingServiceImpl implements BookingService {
 
         bookingRepository.save(booking);
 
-        // Update seats and create booking-seat associations
         List<BookingSeatEntity> bookingSeats = new ArrayList<>();
         for (SeatEntity seat : seats) {
-            // Mark seat as booked and clear lock
             seat.setBooking(booking);
             seat.setStatus(SeatStatus.BOOKED);
             seat.setLockedUntil(null);
             seat.setLockOwner(null);
 
-            // Create composite key and booking-seat entity
             BookingSeatId bookingSeatId = new BookingSeatId(booking.getId(), seat.getId());
             BookingSeatEntity bookingSeatEntity = BookingSeatEntity.builder()
                     .id(bookingSeatId)
@@ -115,7 +129,6 @@ public class BookingServiceImpl implements BookingService {
 
         trip.setAvailableSeats(trip.getAvailableSeats() - seats.size());
 
-        // Batch save for efficiency
         seatRepository.saveAll(seats);
         bookingSeatRepository.saveAll(bookingSeats);
         ticketService.generateTicket(booking);
@@ -124,11 +137,20 @@ public class BookingServiceImpl implements BookingService {
         return BookingResponse.builder().message("Booking Successful").build();
     }
 
+    /**
+     * Retrieves all bookings for a specific user.
+     * Validates user existence and fetches all booking details including trip
+     * information.
+     * 
+     * @param userId the ID of the user
+     * @return GetBookingResponse containing list of booking details
+     * @throws UserNotFoundException   if user is not found
+     * @throws NoBookingFoundException if no bookings exist for the user
+     */
     @Override
     @Transactional(readOnly = true)
     public GetBookingResponse getBookingsForUser(Long userId) {
 
-        // Ensure user exists
         userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
@@ -142,6 +164,15 @@ public class BookingServiceImpl implements BookingService {
 
     }
 
+    /**
+     * Retrieves detailed information for a specific booking by ID.
+     * Fetches booking with trip, route, bus, driver, seat, and ticket details.
+     * Calculates travel time and formats response with all relevant information.
+     * 
+     * @param bookingId the ID of the booking
+     * @return GetBookingByIdResponse containing comprehensive booking details
+     * @throws NoBookingFoundException if booking or ticket is not found
+     */
     @Override
     @Transactional(readOnly = true)
     public GetBookingByIdResponse getBookingById(Long bookingId) {
@@ -180,6 +211,14 @@ public class BookingServiceImpl implements BookingService {
         return response;
     }
 
+    /**
+     * Calculates travel time duration between departure and arrival times.
+     * Handles overnight trips where arrival time is before departure time.
+     * 
+     * @param departureTime the departure time
+     * @param arrivalTime   the arrival time
+     * @return formatted string "HH hours and MM minutes"
+     */
     private String calculateTravelTime(LocalTime departureTime, LocalTime arrivalTime) {
         Duration duration;
 

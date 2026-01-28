@@ -28,7 +28,6 @@ export function PassengerList({ passengers }: PassengerListProps) {
   const [verifiedPassengers, setVerifiedPassengers] = useState<Set<number>>(new Set());
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
-  // Show toast notification
   const showToast = (type: 'success' | 'error', title: string, message: string) => {
     setToast({ show: true, type, title, message });
     setTimeout(() => {
@@ -36,7 +35,6 @@ export function PassengerList({ passengers }: PassengerListProps) {
     }, 4000);
   };
 
-  // Start QR scanner
   const startScanner = async (passenger: { bookingId: number; name: string; ticketNumber: string }) => {
     setSelectedPassenger({
       id: passenger.bookingId,
@@ -46,7 +44,6 @@ export function PassengerList({ passengers }: PassengerListProps) {
     setScannerOpen(true);
   };
 
-  // Stop QR scanner
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
@@ -61,26 +58,20 @@ export function PassengerList({ passengers }: PassengerListProps) {
     setSelectedPassenger(null);
   };
 
-  // Handle successful QR scan
   const onScanSuccess = useCallback(async (decodedText: string) => {
     if (!selectedPassenger) return;
 
-    // Stop scanner immediately
     await stopScanner();
 
-    // Check if scanned ticket matches
     if (decodedText.trim() === selectedPassenger.ticketNumber.trim()) {
-      // Immediately mark as verified in UI
       setVerifiedPassengers(prev => new Set(prev).add(selectedPassenger.id));
       
-      // Call API to verify ticket
       setIsVerifying(true);
       try {
         const result = await verifyTicket(selectedPassenger.id);
         
         showToast('success', 'Ticket Verified!', result.message || `Ticket verified successfully for ${selectedPassenger.name}`);
       } catch (err: unknown) {
-        // If API fails, remove from verified set
         setVerifiedPassengers(prev => {
           const newSet = new Set(prev);
           newSet.delete(selectedPassenger.id);
@@ -99,27 +90,22 @@ export function PassengerList({ passengers }: PassengerListProps) {
     }
   }, [selectedPassenger]);
 
-  // Handle scan errors (ignore continuous scanning errors)
   const onScanError = useCallback((errorMessage: string) => {
-    // Ignore continuous scanning errors, only log critical ones
     if (!errorMessage.includes("NotFoundException")) {
       console.error("QR Scan Error:", errorMessage);
     }
   }, []);
 
-  // Initialize scanner after modal is rendered
   useEffect(() => {
     if (!scannerOpen || !selectedPassenger) return;
 
     const initScanner = async () => {
-      // Wait for DOM to render
       await new Promise(resolve => setTimeout(resolve, 100));
 
       try {
         const html5QrCode = new Html5Qrcode("qr-reader");
         scannerRef.current = html5QrCode;
 
-        // Try to start with environment camera (back camera on phones)
         try {
           await html5QrCode.start(
             { facingMode: "environment" },
@@ -131,7 +117,6 @@ export function PassengerList({ passengers }: PassengerListProps) {
             onScanError
           );
         } catch {
-          // If environment camera fails, try user camera (front camera/webcam)
           try {
             await html5QrCode.start(
               { facingMode: "user" },
@@ -143,7 +128,6 @@ export function PassengerList({ passengers }: PassengerListProps) {
               onScanError
             );
           } catch {
-            // If both fail, try without facingMode constraint (any available camera)
             const devices = await Html5Qrcode.getCameras();
             if (devices && devices.length > 0) {
               const cameraId = devices[0].id;
@@ -175,7 +159,6 @@ export function PassengerList({ passengers }: PassengerListProps) {
     initScanner();
   }, [scannerOpen, selectedPassenger, onScanSuccess, onScanError]);
 
-  // Cleanup scanner on unmount
   useEffect(() => {
     return () => {
       if (scannerRef.current) {

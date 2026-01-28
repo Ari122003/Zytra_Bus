@@ -5,68 +5,53 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { LogOut, Bus, Clock, MapPin, Calendar, Navigation, AlertCircle, Loader2, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { getCurrentTrip } from "@/lib/api/trip.api";
+import { getCurrentTrip, getUpcomingTrips } from "@/lib/api/trip.api";
 import { PassengerList } from "./PassengerList";
 
 export default function TripsPage() {
   const { driver, logout } = useAuth();
 
-  // Fetch current trip using TanStack Query
   const { data: currentTrip, isLoading, isError, error } = useQuery({
     queryKey: ['currentTrip', driver?.id],
     queryFn: () => getCurrentTrip(driver!.id!),
-    enabled: !!driver?.id, // Only fetch if driver ID exists
-    refetchInterval: 30000, // Refetch every 30 seconds to keep trip data fresh
+    enabled: !!driver?.id,
+    refetchInterval: 30000,
   });
 
-  // Mock data for upcoming trips - replace with actual API call later
-  const upcomingTrips = [
-    {
-      id: 1,
-      route: "New York → Boston",
-      departureTime: "2026-01-28T08:00:00",
-      arrivalTime: "2026-01-28T12:30:00",
-      status: "upcoming",
-      busNumber: "BUS-101",
-      passengers: 28,
-    },
-    {
-      id: 2,
-      route: "Boston → New York",
-      departureTime: "2026-01-28T14:00:00",
-      arrivalTime: "2026-01-28T18:30:00",
-      status: "upcoming",
-      busNumber: "BUS-101",
-      passengers: 32,
-    },
-  ];
+  const { 
+    data: upcomingTripsData, 
+    isLoading: isLoadingUpcoming, 
+    isError: isErrorUpcoming 
+  } = useQuery({
+    queryKey: ['upcomingTrips', driver?.id],
+    queryFn: () => getUpcomingTrips(driver!.id!),
+    enabled: !!driver?.id,
+    refetchInterval: 60000,
+  });
 
-  // Format date for display (handles Java LocalTime and LocalDateTime formats)
+  /**
+   * Formats date/time strings from the API to human-readable format.
+   * Handles Java LocalTime (HH:MM:SS) and LocalDateTime (ISO format) from backend.
+   * Converts to 12-hour format with AM/PM for display.
+   */
   const formatDateTime = (dateString: string) => {
     if (!dateString) return 'N/A';
     
-    // Check if it's a time-only format (HH:MM:SS or HH:MM)
     const timeOnlyPattern = /^\d{2}:\d{2}(:\d{2})?$/;
     if (timeOnlyPattern.test(dateString)) {
-      // It's just a time, parse it as time only
       const [hours, minutes] = dateString.split(':');
       const hour = parseInt(hours, 10);
       
-      // Format as 12-hour time
       const period = hour >= 12 ? 'PM' : 'AM';
       const hour12 = hour % 12 || 12;
       
       return `${hour12}:${minutes} ${period}`;
     }
     
-    // Handle full datetime formats
-    // Java LocalDateTime can be in formats like:
-    // "2026-01-28T08:00:00" or "2026-01-28 08:00:00"
     const normalizedDate = dateString.replace(' ', 'T');
     
     const date = new Date(normalizedDate);
     
-    // Check if date is valid
     if (isNaN(date.getTime())) {
       console.error('Invalid date string:', dateString);
       return 'Invalid Date';
@@ -248,20 +233,30 @@ export default function TripsPage() {
                 <h3 className="text-xl font-bold text-foreground">Upcoming Trips</h3>
               </div>
 
-              {upcomingTrips.length === 0 ? (
+              {isLoadingUpcoming ? (
+                <div className="bg-card rounded-lg shadow-md border border-border p-6 text-center">
+                  <Loader2 className="mx-auto animate-spin text-primary mb-3" size={40} />
+                  <p className="text-sm text-muted-foreground">Loading upcoming trips...</p>
+                </div>
+              ) : isErrorUpcoming ? (
+                <div className="bg-card rounded-lg shadow-md border border-border p-6 text-center">
+                  <AlertCircle className="mx-auto text-destructive mb-3" size={40} />
+                  <p className="text-sm text-destructive">Failed to load upcoming trips</p>
+                </div>
+              ) : !upcomingTripsData?.upcomingTrips || upcomingTripsData.upcomingTrips.length === 0 ? (
                 <div className="bg-card rounded-lg shadow-md border border-border p-6 text-center">
                   <Calendar className="mx-auto text-muted-foreground mb-3" size={40} />
                   <p className="text-sm text-muted-foreground">No upcoming trips scheduled</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {upcomingTrips.map((trip) => (
+                  {upcomingTripsData.upcomingTrips.map((trip) => (
                     <div
-                      key={trip.id}
+                      key={trip.tripId}
                       className="bg-card rounded-lg shadow-md border border-border p-4 border-l-4 border-l-accent hover:shadow-lg transition-shadow">
                       <div className="mb-3">
                         <h4 className="font-bold text-foreground mb-1">
-                          {trip.route}
+                          {trip.startLocation} → {trip.endLocation}
                         </h4>
                         <span className="inline-block px-2 py-0.5 bg-accent/20 text-accent-foreground text-xs font-semibold rounded">
                           UPCOMING
@@ -270,19 +265,24 @@ export default function TripsPage() {
 
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-muted-foreground">
-                          <Bus size={14} />
-                          <span>{trip.busNumber}</span>
+                          <Calendar size={14} />
+                          <span>{new Date(trip.travelDate).toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}</span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock size={14} />
                           <div className="flex flex-col">
-                            <span className="font-medium text-foreground">Depart: {trip.departureTime}</span>
-                            <span className="font-medium text-foreground">Arrive: {trip.arrivalTime}</span>
+                            <span className="font-medium text-foreground">Depart: {formatDateTime(trip.departureTime)}</span>
+                            <span className="font-medium text-foreground">Arrive: {formatDateTime(trip.arrivalTime)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Users size={14} />
-                          <span>{trip.passengers} passengers</span>
+                          <span>{trip.availableSeats} seats available</span>
                         </div>
                       </div>
 

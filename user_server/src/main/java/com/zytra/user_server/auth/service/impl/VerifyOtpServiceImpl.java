@@ -10,7 +10,6 @@ import com.zytra.user_server.auth.dto.response.LoginResponse;
 import com.zytra.user_server.auth.entity.OtpEntity;
 import com.zytra.user_server.user.entity.UserEntity;
 import com.zytra.user_server.enums.UserStatus;
-import com.zytra.user_server.enums.UserRole;
 import com.zytra.user_server.auth.exception.InvalidOtpException;
 import com.zytra.user_server.auth.exception.InvalidUserException;
 import com.zytra.user_server.auth.repository.OtpRepository;
@@ -37,6 +36,18 @@ public class VerifyOtpServiceImpl implements VerifyOtpService {
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * Verifies OTP and completes user registration.
+     * Validates OTP against stored hash, checks expiry, creates new user account,
+     * encrypts password, and generates authentication tokens.
+     * 
+     * @param request the VerifyOtpRequest containing email, OTP, and user
+     *                registration details
+     * @return LoginResponse containing access token, refresh token, and user
+     *         information
+     * @throws InvalidUserException if user already exists
+     * @throws InvalidOtpException  if OTP is not found, expired, or invalid
+     */
     @Override
     @Transactional
     public LoginResponse verifyOtp(VerifyOtpRequest request) {
@@ -45,11 +56,9 @@ public class VerifyOtpServiceImpl implements VerifyOtpService {
             throw new InvalidUserException("Invalid user");
         }
 
-        // Fetch OTP entity to check expiry
         OtpEntity otpEntity = otpRepository.findOtpByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidOtpException("OTP not found"));
 
-        // Check if OTP has expired
         if (LocalDateTime.now().isAfter(otpEntity.getExpiresAt())) {
             otpRepository.deleteByEmail(request.getEmail());
             throw new InvalidOtpException("OTP has expired. Please request a new OTP.");
@@ -63,13 +72,11 @@ public class VerifyOtpServiceImpl implements VerifyOtpService {
             throw new InvalidOtpException("Invalid OTP");
         }
 
-        // Delete OTP after successful verification
         otpRepository.deleteByEmail(request.getEmail());
 
         LocalDate dobDate = LocalDate.parse(request.getDob());
         LocalDateTime dob = dobDate.atStartOfDay();
 
-        // Encrypt password before storing
         String encryptedPassword = PasswordUtil.encrypt(request.getPassword());
 
         UserEntity user = UserEntity.builder()

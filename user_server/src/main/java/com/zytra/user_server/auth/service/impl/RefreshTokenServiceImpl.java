@@ -22,12 +22,33 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         this.refreshTokenRepository = refreshTokenRepository;
     }
 
+    /**
+     * Creates a refresh token for a user entity.
+     * Delegates to createRefreshToken(Long userId, ...) using the user's ID.
+     * 
+     * @param user       the user entity
+     * @param token      the refresh token string
+     * @param deviceInfo device information for tracking
+     * @param ipAddress  IP address for tracking
+     * @return the created RefreshTokenEntity
+     */
     @Override
     @Transactional
     public RefreshTokenEntity createRefreshToken(UserEntity user, String token, String deviceInfo, String ipAddress) {
         return createRefreshToken(user.getId(), token, deviceInfo, ipAddress);
     }
 
+    /**
+     * Creates a refresh token for a user by user ID.
+     * Hashes the token, sets expiry to 7 days from now, and persists the token
+     * entity.
+     * 
+     * @param userId     the ID of the user
+     * @param token      the refresh token string to hash and store
+     * @param deviceInfo device information for tracking
+     * @param ipAddress  IP address for tracking
+     * @return the created RefreshTokenEntity
+     */
     @Override
     @Transactional
     public RefreshTokenEntity createRefreshToken(Long userId, String token, String deviceInfo, String ipAddress) {
@@ -50,6 +71,15 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
+    /**
+     * Validates a refresh token by checking its hash, revocation status, and
+     * expiry.
+     * Updates the last used timestamp if validation succeeds.
+     * 
+     * @param token the refresh token string to validate
+     * @return the validated RefreshTokenEntity
+     * @throws InvalidCredentialException if token is invalid, revoked, or expired
+     */
     @Override
     @Transactional(readOnly = true)
     public RefreshTokenEntity validateRefreshToken(String token) {
@@ -66,13 +96,18 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             throw new InvalidCredentialException("Refresh token has expired");
         }
 
-        // Update last used timestamp
         refreshToken.setLastUsedAt(LocalDateTime.now());
         refreshTokenRepository.save(refreshToken);
 
         return refreshToken;
     }
 
+    /**
+     * Revokes a specific refresh token by its hash.
+     * Marks the token as unusable for future authentication.
+     * 
+     * @param token the refresh token string to revoke
+     */
     @Override
     @Transactional
     public void revokeToken(String token) {
@@ -80,18 +115,36 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         refreshTokenRepository.revokeByTokenHash(tokenHash);
     }
 
+    /**
+     * Revokes all refresh tokens for a specific user.
+     * Used for logout all devices or security purposes.
+     * 
+     * @param userId the ID of the user whose tokens should be revoked
+     */
     @Override
     @Transactional
     public void revokeAllUserTokens(Long userId) {
         refreshTokenRepository.revokeAllByUserId(userId);
     }
 
+    /**
+     * Removes all expired refresh tokens from the database.
+     * Should be run periodically as a cleanup task to maintain database hygiene.
+     */
     @Override
     @Transactional
     public void cleanupExpiredTokens() {
         refreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
     }
 
+    /**
+     * Hashes a token string using SHA-256 algorithm.
+     * Provides security by storing hashed tokens instead of plaintext.
+     * 
+     * @param token the token string to hash
+     * @return Base64-encoded hash of the token
+     * @throws RuntimeException if hashing fails
+     */
     private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

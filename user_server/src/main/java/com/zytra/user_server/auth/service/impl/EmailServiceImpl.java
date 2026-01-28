@@ -14,6 +14,15 @@ public class EmailServiceImpl implements EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    /**
+     * Sends an OTP verification email to the specified email address.
+     * Creates and sends a formatted HTML email containing the OTP code with styling
+     * and branding.
+     * 
+     * @param email the recipient email address
+     * @param otp   the OTP code to include in the email
+     * @throws RuntimeException if email sending fails
+     */
     @Override
     public void sendEmail(String email, String otp) {
         try {
@@ -33,6 +42,14 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    /**
+     * Builds an HTML email template for OTP verification.
+     * Creates a styled email with branding, OTP code display, expiry notice, and
+     * security warnings.
+     * 
+     * @param otp the OTP code to embed in the template
+     * @return HTML string containing the formatted email template
+     */
     private String buildOtpEmailTemplate(String otp) {
         return """
                 <!DOCTYPE html>

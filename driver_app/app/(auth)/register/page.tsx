@@ -33,15 +33,12 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      // Validate form data
       const data = { name, email, phone, password, confirmPassword };
       const validatedData = registrationSchema.parse(data);
 
-      // Call register API
       const response = await register(validatedData);
 
       if (response.status === 'ACTIVE') {
-        // Successfully registered - navigate to home page
         router.push('/trips');
       } else if (response.status === 'PENDING_VERIFICATION') {
         setApiError("Your account is pending verification. Please contact support.");
@@ -50,7 +47,6 @@ export default function RegisterPage() {
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
-        // Handle validation errors
         const fieldErrors: Partial<Record<keyof RegistrationFormData, string>> = {};
         error.issues.forEach((issue) => {
           const path = issue.path[0] as keyof RegistrationFormData;

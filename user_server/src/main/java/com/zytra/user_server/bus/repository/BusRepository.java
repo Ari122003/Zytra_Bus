@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import com.zytra.user_server.bus.entity.BusEntity;
 
 @Repository
-
 public interface BusRepository extends JpaRepository<BusEntity, Long> {
 
     Optional<BusEntity> findById(Long id);

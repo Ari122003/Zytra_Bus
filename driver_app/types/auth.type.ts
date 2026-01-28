@@ -1,13 +1,10 @@
-// Driver status enum matching backend
 export type DriverStatus = 'ACTIVE' | 'PENDING_VERIFICATION' | 'BLOCKED' | 'DELETED';
 
-// Login request
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-// Registration request for driver
 export interface RegisterRequest {
   name: string;
   email: string;
@@ -16,7 +13,6 @@ export interface RegisterRequest {
   confirmPassword: string;
 }
 
-// Login response (for existing active drivers)
 export interface LoginResponse {
   message: string;
   status: DriverStatus;
@@ -26,17 +22,14 @@ export interface LoginResponse {
   expiresIn: number | null;
 }
 
-// Refresh token request
 export interface RefreshTokenRequest {
   refreshToken: string;
 }
 
-// Logout request
 export interface LogoutRequest {
   refreshToken: string;
 }
 
-// Error response from API
 export interface ErrorResponse {
   timestamp: string;
   status: number;
@@ -45,7 +38,6 @@ export interface ErrorResponse {
   errors?: Record<string, string>;
 }
 
-// Driver data stored in context
 export interface Driver {
   id: number | null;
   email: string;
@@ -55,7 +47,6 @@ export interface Driver {
   status: DriverStatus;
 }
 
-// Auth state
 export interface AuthState {
   driver: Driver | null;
   accessToken: string | null;

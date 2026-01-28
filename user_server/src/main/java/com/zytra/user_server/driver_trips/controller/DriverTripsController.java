@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.zytra.user_server.driver_trips.dto.responses.GetCurrentTripResponse;
+import com.zytra.user_server.driver_trips.dto.responses.GetUpcomingTripsResponse;
 import com.zytra.user_server.driver_trips.dto.responses.MessageResponse;
 import com.zytra.user_server.driver_trips.service.DriverTripService;
 
@@ -23,6 +24,11 @@ public class DriverTripsController {
     @GetMapping("/current-trip/{driverId}")
     public ResponseEntity<GetCurrentTripResponse> CurentTripController(@PathVariable Long driverId) {
         return ResponseEntity.ok(driverTripService.getCurrentTrip(driverId));
+    }
+
+    @GetMapping("/upcoming-trips/{driverId}")
+    public ResponseEntity<GetUpcomingTripsResponse> getUpcomingTrips(@PathVariable Long driverId) {
+        return ResponseEntity.ok(driverTripService.getUpcomingTrips(driverId));
     }
 
     @PatchMapping("/verify-ticket/{bookingId}")

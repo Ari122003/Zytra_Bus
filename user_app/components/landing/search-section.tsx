@@ -78,19 +78,14 @@ export default function SearchSection({
     setTo(temp)
   }
 
-  /**
-   * Check if the selected date is before today
-   */
+  // Validates if selected date is before today to prevent past date selection
   const isDateBeforeToday = (selectedDate: string): boolean => {
     const today = new Date()
-    today.setHours(0, 0, 0, 0) // Reset time to start of day
+    today.setHours(0, 0, 0, 0)
     const selected = new Date(selectedDate)
     return selected < today
   }
 
-  /**
-   * Handle date change with validation
-   */
   const handleDateChange = (value: string) => {
     setDate(value)
     if (value && isDateBeforeToday(value)) {
@@ -101,9 +96,8 @@ export default function SearchSection({
   }
 
   const handleSearch = () => {
-    if (isSearching) return; // Prevent multiple clicks
+    if (isSearching) return;
     
-    // Validate date before searching
     if (isDateBeforeToday(date)) {
       setDateError('Travel date cannot be in the past')
       return

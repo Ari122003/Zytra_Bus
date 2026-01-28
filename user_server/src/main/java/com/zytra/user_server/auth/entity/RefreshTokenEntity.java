@@ -39,9 +39,9 @@ public class RefreshTokenEntity {
     @Builder.Default
     private boolean revoked = false;
 
-    private String deviceInfo; // Optional: user agent, device fingerprint
+    private String deviceInfo;
 
-    private String ipAddress; // Optional: IP for security tracking
+    private String ipAddress;
 
     @PrePersist
     protected void onCreate() {

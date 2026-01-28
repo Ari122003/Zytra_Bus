@@ -12,6 +12,10 @@ import com.zytra.user_server.bookings.entity.BookingEntity;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
 
+        /**
+         * Fetches booking details for a user including route source and destination,
+         * travel date, departure and arrival times, and seat count
+         */
         @Query("SELECT new com.zytra.user_server.bookings.dto.BookingDetails(b.id, r.source, r.destination, t.travelDate, s.departureTime, s.arrivalTime, b.seatCount) "
                         +
                         "FROM BookingEntity b " +
@@ -21,9 +25,16 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
                         "WHERE b.user.id = :userId")
         List<BookingDetails> findBookingDetailsByUserId(@Param("userId") Long userId);
 
+        /**
+         * Fetches booking by ID
+         */
         @Query("SELECT b FROM BookingEntity b WHERE b.id = :bookingId")
         Optional<BookingEntity> findById(@Param("bookingId") Long bookingId);
 
+        /**
+         * Fetches booking by ID with trip, schedule, route, bus, and driver details
+         * eagerly loaded
+         */
         @Query("SELECT b FROM BookingEntity b " +
                         "LEFT JOIN FETCH b.trip t " +
                         "LEFT JOIN FETCH t.schedule s " +
@@ -33,6 +44,9 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
                         "WHERE b.id = :bookingId")
         Optional<BookingEntity> findByIdWithDetails(@Param("bookingId") Long bookingId);
 
+        /**
+         * Fetches bookings for a trip with user and ticket details eagerly loaded
+         */
         @Query("SELECT b FROM BookingEntity b " +
                         "JOIN FETCH b.user " +
                         "LEFT JOIN FETCH b.ticket " +

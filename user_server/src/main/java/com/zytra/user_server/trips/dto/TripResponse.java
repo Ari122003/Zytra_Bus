@@ -30,9 +30,8 @@ public class TripResponse {
     private int availableSeats;
     private BigDecimal fare;
 
-    // Seat matrix: 12 rows (A-L), 4 columns per row (2x2 layout)
     private List<List<SeatDTO>> seatMatrix;
-    private int totalRows; // 12 rows (A-L)
-    private int seatsPerRow; // 4 seats per row (2x2)
+    private int totalRows;
+    private int seatsPerRow;
 
 }

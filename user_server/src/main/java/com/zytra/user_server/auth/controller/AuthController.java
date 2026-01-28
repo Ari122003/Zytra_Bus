@@ -47,7 +47,6 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    // User authentication endpoints
     @PostMapping("/auth/login")
     public LoginResponse userLoginController(@RequestBody @Valid LoginRequest request) {
         return authService.login(request);
@@ -62,19 +61,15 @@ public class AuthController {
     public LoginResponse userRefreshTokenController(@RequestBody @Valid RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
-        // Validate refresh token and get token entity
         RefreshTokenEntity tokenEntity = refreshTokenService.validateRefreshToken(refreshToken);
 
-        // Get user
         UserEntity user = userRepository.findById(tokenEntity.getUserId())
                 .orElseThrow(() -> new InvalidCredentialException("User not found"));
 
-        // Generate new tokens
         String newAccessToken = jwtUtil.generateAccessToken(user);
         String newRefreshToken = jwtUtil.generateRefreshToken(user);
         long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
 
-        // Revoke old refresh token and persist new one (token rotation)
         refreshTokenService.revokeToken(refreshToken);
         refreshTokenService.createRefreshToken(user, newRefreshToken, null, null);
 
@@ -86,7 +81,6 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> userLogoutController(@RequestBody @Valid RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
 
-        // Revoke the refresh token
         refreshTokenService.revokeToken(refreshToken);
 
         Map<String, String> response = new HashMap<>();

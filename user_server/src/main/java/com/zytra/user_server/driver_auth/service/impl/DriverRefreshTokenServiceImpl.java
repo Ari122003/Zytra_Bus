@@ -34,8 +34,16 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
         this.jwtUtil = jwtUtil;
     }
 
-    // ==================== Token Lifecycle Methods ====================
-
+    /**
+     * Creates a refresh token for a driver entity.
+     * Delegates to createRefreshToken(Long driverId, ...) using the driver's ID.
+     * 
+     * @param driver     the driver entity
+     * @param token      the refresh token string
+     * @param deviceInfo device information for tracking
+     * @param ipAddress  IP address for tracking
+     * @return the created DriverRefreshTokenEntity
+     */
     @Override
     @Transactional
     public DriverRefreshTokenEntity createRefreshToken(DriverEntity driver, String token, String deviceInfo,
@@ -43,6 +51,17 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
         return createRefreshToken(driver.getId(), token, deviceInfo, ipAddress);
     }
 
+    /**
+     * Creates a refresh token for a driver by driver ID.
+     * Hashes the token, sets expiry to 7 days from now, and persists the token
+     * entity.
+     * 
+     * @param driverId   the ID of the driver
+     * @param token      the refresh token string to hash and store
+     * @param deviceInfo device information for tracking
+     * @param ipAddress  IP address for tracking
+     * @return the created DriverRefreshTokenEntity
+     */
     @Override
     @Transactional
     public DriverRefreshTokenEntity createRefreshToken(Long driverId, String token, String deviceInfo,
@@ -65,6 +84,16 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
         return driverRefreshTokenRepository.save(refreshToken);
     }
 
+    /**
+     * Validates a driver refresh token by checking its hash, revocation status, and
+     * expiry.
+     * Updates the last used timestamp if validation succeeds.
+     * 
+     * @param token the refresh token string to validate
+     * @return the validated DriverRefreshTokenEntity
+     * @throws DriverInvalidCredentialException if token is invalid, revoked, or
+     *                                          expired
+     */
     @Override
     @Transactional
     public DriverRefreshTokenEntity validateRefreshToken(String token) {
@@ -79,6 +108,12 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
         return refreshToken;
     }
 
+    /**
+     * Revokes a specific driver refresh token by its hash.
+     * Marks the token as unusable for future authentication.
+     * 
+     * @param token the refresh token string to revoke
+     */
     @Override
     @Transactional
     public void revokeToken(String token) {
@@ -86,20 +121,39 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
         driverRefreshTokenRepository.revokeByTokenHash(tokenHash);
     }
 
+    /**
+     * Revokes all refresh tokens for a specific driver.
+     * Used for logout all devices or security purposes.
+     * 
+     * @param driverId the ID of the driver whose tokens should be revoked
+     */
     @Override
     @Transactional
     public void revokeAllDriverTokens(Long driverId) {
         driverRefreshTokenRepository.revokeAllByDriverId(driverId);
     }
 
+    /**
+     * Removes all expired driver refresh tokens from the database.
+     * Should be run periodically as a cleanup task to maintain database hygiene.
+     */
     @Override
     @Transactional
     public void cleanupExpiredTokens() {
         driverRefreshTokenRepository.deleteExpiredTokens(LocalDateTime.now());
     }
 
-    // ==================== Business Logic Methods ====================
-
+    /**
+     * Refreshes an expired access token using a valid refresh token.
+     * Validates the refresh token, fetches driver details, generates new access and
+     * refresh tokens,
+     * and rotates the refresh token for security.
+     * 
+     * @param request the DriverRefreshTokenRequest containing the refresh token
+     * @return DriverLoginResponse with new access and refresh tokens
+     * @throws DriverInvalidCredentialException if token is invalid or driver not
+     *                                          found
+     */
     @Override
     @Transactional
     public DriverLoginResponse refreshToken(DriverRefreshTokenRequest request) {
@@ -116,14 +170,26 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
                 newAccessToken, newRefreshToken, Long.valueOf(expiresIn));
     }
 
+    /**
+     * Logs out a driver by revoking their refresh token.
+     * Invalidates the current session and prevents token reuse.
+     * 
+     * @param request the DriverRefreshTokenRequest containing the refresh token to
+     *                revoke
+     */
     @Override
     @Transactional
     public void logout(DriverRefreshTokenRequest request) {
         revokeToken(request.getRefreshToken());
     }
 
-    // ==================== Private Helper Methods ====================
-
+    /**
+     * Validates the state of a driver refresh token.
+     * Checks if token is revoked or expired and throws exceptions accordingly.
+     * 
+     * @param refreshToken the token entity to validate
+     * @throws DriverInvalidCredentialException if token is revoked or expired
+     */
     private void validateTokenState(DriverRefreshTokenEntity refreshToken) {
         if (refreshToken.isRevoked()) {
             throw new DriverInvalidCredentialException("Refresh token has been revoked");
@@ -134,21 +200,51 @@ public class DriverRefreshTokenServiceImpl implements DriverRefreshTokenService 
         }
     }
 
+    /**
+     * Updates the last used timestamp of a driver refresh token.
+     * Tracks token usage for security monitoring and analytics.
+     * 
+     * @param refreshToken the token entity to update
+     */
     private void updateLastUsedTimestamp(DriverRefreshTokenEntity refreshToken) {
         refreshToken.setLastUsedAt(LocalDateTime.now());
         driverRefreshTokenRepository.save(refreshToken);
     }
 
+    /**
+     * Retrieves a driver entity by ID.
+     * Helper method for token refresh operations.
+     * 
+     * @param driverId the ID of the driver
+     * @return the DriverEntity
+     * @throws DriverInvalidCredentialException if driver is not found
+     */
     private DriverEntity getDriverById(Long driverId) {
         return driverRepository.findById(driverId)
                 .orElseThrow(() -> new DriverInvalidCredentialException("Driver not found"));
     }
 
+    /**
+     * Rotates a refresh token by revoking the old token and creating a new one.
+     * Implements token rotation security best practice.
+     * 
+     * @param oldToken the old refresh token to revoke
+     * @param driverId the ID of the driver
+     * @param newToken the new refresh token to create
+     */
     private void rotateRefreshToken(String oldToken, Long driverId, String newToken) {
         revokeToken(oldToken);
         createRefreshToken(driverId, newToken, null, null);
     }
 
+    /**
+     * Hashes a token string using SHA-256 algorithm.
+     * Provides security by storing hashed tokens instead of plaintext.
+     * 
+     * @param token the token string to hash
+     * @return Base64-encoded hash of the token
+     * @throws RuntimeException if hashing fails
+     */
     private String hashToken(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");

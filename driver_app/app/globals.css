@@ -4,7 +4,6 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Crimson color theme for Zytra Bus */
   --background: oklch(0.98 0.02 10);
   --foreground: oklch(0.2 0.01 0);
   --card: oklch(1 0 0);

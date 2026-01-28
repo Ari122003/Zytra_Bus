@@ -31,7 +31,6 @@ public class JwtUtil {
 
     private SecretKey getSigningKey(byte[] salt) {
         try {
-            // derive 256-bit key from secret (and optional salt)
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update(jwtSecret.getBytes(StandardCharsets.UTF_8));
             if (salt != null)
@@ -123,9 +122,6 @@ public class JwtUtil {
         return accessTokenMinutes * 60L;
     }
 
-    /**
-     * Validates and parses JWT token. Throws JwtException if invalid/expired.
-     */
     public Claims validateAndParseClaims(String token) {
         SecretKey key = getSigningKey(null);
         return Jwts.parserBuilder()
@@ -137,10 +133,6 @@ public class JwtUtil {
                 .getBody();
     }
 
-    /**
-     * Extracts email (subject) from token without full validation (for quick
-     * lookups)
-     */
     public String getEmailFromToken(String token) {
         try {
             return validateAndParseClaims(token).getSubject();
@@ -149,9 +141,6 @@ public class JwtUtil {
         }
     }
 
-    /**
-     * Extracts userId from token
-     */
     public Long getUserIdFromToken(String token) {
         try {
             Claims claims = validateAndParseClaims(token);

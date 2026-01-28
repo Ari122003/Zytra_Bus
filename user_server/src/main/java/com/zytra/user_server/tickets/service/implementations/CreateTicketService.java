@@ -25,6 +25,16 @@ public class CreateTicketService implements TicketService {
     private final QRCodeService qrCodeService;
     private final TicketNumberService ticketNumberService;
 
+    /**
+     * Generates a ticket for a confirmed booking.
+     * Creates a unique ticket number, generates a QR code, and saves the ticket to
+     * the database.
+     * The QR code is encoded as a Base64 PNG image. The ticket is valid until 2
+     * hours after departure.
+     * 
+     * @param booking the booking entity for which to generate the ticket
+     * @throws RuntimeException if ticket generation fails
+     */
     @Override
     @Transactional
     public void generateTicket(BookingEntity booking) {
@@ -34,7 +44,6 @@ public class CreateTicketService implements TicketService {
 
             BufferedImage qrCodeImage = qrCodeService.generateQRCode(ticketNumber);
 
-            // Encode QR image to PNG and store as Base64 string
             String qrCodeBase64;
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 ImageIO.write(qrCodeImage, "PNG", baos);

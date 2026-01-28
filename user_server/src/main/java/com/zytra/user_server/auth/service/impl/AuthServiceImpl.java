@@ -38,6 +38,21 @@ public class AuthServiceImpl implements AuthService {
         this.refreshTokenService = refreshTokenService;
     }
 
+    /**
+     * Handles user login authentication.
+     * For existing ACTIVE users: validates credentials and returns access/refresh
+     * tokens.
+     * For new or non-active users: generates and sends OTP for verification.
+     * Handles password decryption, user status validation, and token generation.
+     * 
+     * @param request the LoginRequest containing email and password
+     * @return LoginResponse with tokens for successful login or OTP sent status for
+     *         new users
+     * @throws InvalidCredentialException if email is missing or credentials are
+     *                                    invalid
+     * @throws InvalidUserException       if user is BLOCKED or DELETED, or password
+     *                                    is not set
+     */
     @Override
     @Transactional
     public LoginResponse login(LoginRequest request) {
@@ -57,13 +72,10 @@ public class AuthServiceImpl implements AuthService {
                     throw new InvalidUserException("User has not set a password, cannot login");
                 }
 
-                // Try to decrypt (for encrypted passwords) or compare directly (for legacy
-                // plain text)
                 String decryptedPassword;
                 try {
                     decryptedPassword = PasswordUtil.decrypt(passwordHash);
                 } catch (Exception e) {
-                    // Legacy plain text password - compare directly
                     decryptedPassword = passwordHash;
                 }
 
@@ -71,15 +83,12 @@ public class AuthServiceImpl implements AuthService {
                     throw new InvalidCredentialException("Invalid Credentials");
                 }
 
-                // Generate tokens
                 String accessToken = jwtUtil.generateAccessToken(user);
                 String refreshToken = jwtUtil.generateRefreshToken(user);
                 long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
 
-                // Persist refresh token
                 refreshTokenService.createRefreshToken(user, refreshToken, null, null);
 
-                // Update last login timestamp
                 user.setLastLoginAt(LocalDateTime.now());
                 userRepository.save(user);
 
@@ -93,11 +102,9 @@ public class AuthServiceImpl implements AuthService {
 
         }
 
-        // Clear any existing OTP for this email before issuing a new one
         otpRepository.deleteByEmail(request.getEmail());
         otpRepository.flush();
 
-        // Generate and save OTP (replace any existing entry for this email)
         String otp = OtpUtil.generateOtp();
         String hashedOtp = OtpUtil.hashOtp(otp);
 

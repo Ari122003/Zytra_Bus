@@ -1,4 +1,3 @@
-// Booking information (previously Passenger)
 export interface Booking {
   bookingId: number;
   passangerId: number;
@@ -8,10 +7,8 @@ export interface Booking {
   bookingStatus: string;
 }
 
-// For backward compatibility
 export type Passenger = Booking;
 
-// Current trip response
 export interface CurrentTrip {
   tripId: number;
   driverId: number;
@@ -22,5 +19,20 @@ export interface CurrentTrip {
   estimatedEndTime: string;
   passengerCount: number;
   bookings: Booking[];
+}
+
+export interface UpcomingTripDTO {
+  tripId: number;
+  startLocation: string;
+  endLocation: string;
+  travelDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  availableSeats: number;
+}
+
+export interface GetUpcomingTripsResponse {
+  driverId: number;
+  upcomingTrips: UpcomingTripDTO[];
 }
 

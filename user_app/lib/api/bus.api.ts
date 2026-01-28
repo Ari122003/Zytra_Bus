@@ -2,15 +2,7 @@ import { apiClient } from './client';
 import { storageKeys } from '@/lib/token';
 import type { SearchBusesResponse, SearchBusRequest, TripDetailsResponse, LockSeatsRequest, LockSeatsResponse, SeatStatus } from '@/types/bus.type';
 
-/**
- * Bus API service
- */
 export const busApi = {
-  /**
-   * Search for available buses
-   * @param params - Search parameters (source, destination, travelDate)
-   * @returns Promise with search results
-   */
   searchBuses: async (params: SearchBusRequest): Promise<SearchBusesResponse> => {
     const queryParams = new URLSearchParams({
       source: params.source,
@@ -18,13 +10,11 @@ export const busApi = {
       travelDate: params.travelDate,
     });
 
-    // Add current time if provided, otherwise use current time
     if (params.currentTime) {
       queryParams.append('currentTime', params.currentTime);
     } else {
-      // Format current time as HH:mm:ss
       const now = new Date();
-      const currentTime = now.toTimeString().split(' ')[0]; // Gets HH:mm:ss
+      const currentTime = now.toTimeString().split(' ')[0];
       queryParams.append('currentTime', currentTime);
     }
 
@@ -34,16 +24,10 @@ export const busApi = {
     return response.data;
   },
 
-  /**
-   * Get trip details by trip ID
-   * @param tripId - The trip ID to fetch details for
-   * @returns Promise with trip details including seats
-   */
   getTripDetails: async (tripId: number): Promise<TripDetailsResponse> => {
     const response = await apiClient.get<TripDetailsResponse>(`/trips/${tripId}`);
     const data = response.data;
 
-    // Get current user ID from localStorage
     let currentUserId: number | undefined;
     if (typeof window !== 'undefined') {
       try {
@@ -59,7 +43,8 @@ export const busApi = {
 
     const now = new Date();
 
-    // Apply seat status logic
+    // Calculate seat availability status based on booking and lock state
+    // Locked seats show as unavailable unless owned by current user
     data.seatMatrix = data.seatMatrix.map(row =>
       row.map(seat => {
         let status: SeatStatus = 'AVAILABLE';
@@ -69,18 +54,15 @@ export const busApi = {
         } else if (seat.lockedUntil) {
           const lockedUntilDate = new Date(seat.lockedUntil);
           if (lockedUntilDate > now) {
-            // Seat is locked
             if (seat.lockOwner === currentUserId) {
               status = 'AVAILABLE';
             } else {
               status = 'UNAVAILABLE';
             }
           } else {
-            // Lock has expired
             status = 'AVAILABLE';
           }
         } else {
-          // No lock, not booked
           status = 'AVAILABLE';
         }
 
@@ -94,11 +76,6 @@ export const busApi = {
     return data;
   },
 
-  /**
-   * Lock seats temporarily for booking
-   * @param request - Lock seats request with tripId and seats array
-   * @returns Promise with lock confirmation and expiry time
-   */
   lockSeats: async (request: LockSeatsRequest): Promise<LockSeatsResponse> => {
     const response = await apiClient.post<LockSeatsResponse>('/seats/lock', request);
     return response.data;

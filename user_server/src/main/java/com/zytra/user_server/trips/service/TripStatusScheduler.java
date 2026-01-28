@@ -13,13 +13,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-/**
- * Scheduler service to automatically update trip statuses based on timing.
- * Runs every 10 seconds to check:
- * 1. Trips where current time is between (departure - 1 hour) and arrival -
- * sets status to ONGOING
- * 2. Trips where current time > arrival - sets status to COMPLETED
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,12 +21,13 @@ public class TripStatusScheduler {
     private final TripRepository tripRepository;
 
     /**
-     * Scheduled task that runs every 10 seconds to update trip statuses.
+     * Scheduled task that runs every 10 seconds to update trip statuses based on
+     * timing.
      * Updates trips that should be ONGOING (current time between departure-1h and
      * arrival)
      * and trips that should be COMPLETED (current time > arrival).
      */
-    @Scheduled(fixedRate = 10000, initialDelay = 2000) // Run every 10 seconds, start after 2 seconds
+    @Scheduled(fixedRate = 10000, initialDelay = 2000)
     @Transactional
     public void updateTripStatuses() {
         try {
@@ -54,10 +48,10 @@ public class TripStatusScheduler {
     }
 
     /**
-     * Finds trips that should be marked as ONGOING.
+     * Finds trips that should be marked as ONGOING based on their departure and
+     * arrival times.
      * Criteria: current time is between (departure time - 1 hour) and arrival time.
-     * Only updates trips with ACTIVE status (avoids resetting if already ONGOING).
-     * Handles overnight trips (e.g., departure 22:00, arrival 06:00).
+     * Only updates trips with ACTIVE status. Handles overnight trips correctly.
      * 
      * @return number of trips updated to ONGOING
      */
@@ -65,7 +59,6 @@ public class TripStatusScheduler {
         LocalDate today = LocalDate.now();
         LocalTime currentTime = LocalTime.now();
 
-        // Get all ACTIVE trips for today
         List<TripEntity> activeTrips = tripRepository.findActiveTripsByDate(TripStatus.ACTIVE, today);
 
         log.info("{} ACTIVE trips found for {}", activeTrips.size(), today);
@@ -82,17 +75,13 @@ public class TripStatusScheduler {
             LocalTime oneHourBeforeDeparture = departureTime.minusHours(1);
 
             boolean shouldBeOngoing;
-            boolean isOvernightTrip = arrivalTime.isBefore(departureTime); // Trip crosses midnight
+            boolean isOvernightTrip = arrivalTime.isBefore(departureTime);
 
             if (isOvernightTrip) {
-                // For overnight trips: current >= (departure - 1h) OR current < arrival
-                // Example: dep=22:00, arr=06:00, start=21:00
-                // ONGOING if: time >= 21:00 OR time < 06:00
                 shouldBeOngoing = (currentTime.isAfter(oneHourBeforeDeparture)
                         || currentTime.equals(oneHourBeforeDeparture))
                         || currentTime.isBefore(arrivalTime);
             } else {
-                // For same-day trips: current >= (departure - 1h) AND current < arrival
                 shouldBeOngoing = (currentTime.isAfter(oneHourBeforeDeparture)
                         || currentTime.equals(oneHourBeforeDeparture))
                         && currentTime.isBefore(arrivalTime);
@@ -121,9 +110,8 @@ public class TripStatusScheduler {
 
     /**
      * Finds trips that have passed their arrival time and marks them as COMPLETED.
-     * Criteria: current time >= arrival time.
-     * Only updates trips with ONGOING status (avoids resetting if already
-     * COMPLETED).
+     * Criteria: current time >= arrival time. Only updates trips with ONGOING
+     * status.
      * Handles overnight trips correctly.
      * 
      * @return number of trips updated to COMPLETED
@@ -132,7 +120,6 @@ public class TripStatusScheduler {
         LocalDate today = LocalDate.now();
         LocalTime currentTime = LocalTime.now();
 
-        // Get all ONGOING trips for today
         List<TripEntity> ongoingTrips = tripRepository.findOngoingTripsByDate(TripStatus.ONGOING, today);
 
         log.info("{} ONGOING trips found for {}", ongoingTrips.size(), today);
@@ -152,15 +139,9 @@ public class TripStatusScheduler {
             boolean shouldBeCompleted;
 
             if (isOvernightTrip) {
-                // For overnight trips: completed if current >= arrival AND current < (departure
-                // - 1h)
-                // Example: dep=22:00, arr=08:00, start window=21:00
-                // COMPLETED if: time >= 08:00 AND time < 21:00 (morning/afternoon after
-                // arrival)
                 shouldBeCompleted = (currentTime.isAfter(arrivalTime) || currentTime.equals(arrivalTime))
                         && currentTime.isBefore(oneHourBeforeDeparture);
             } else {
-                // For same-day trips: completed if current >= arrival
                 shouldBeCompleted = currentTime.isAfter(arrivalTime) || currentTime.equals(arrivalTime);
             }
 

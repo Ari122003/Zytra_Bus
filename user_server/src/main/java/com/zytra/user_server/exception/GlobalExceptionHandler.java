@@ -246,7 +246,6 @@ public class GlobalExceptionHandler {
                 .build();
     }
 
-    // Driver Auth Exception Handlers
     @ExceptionHandler(DriverAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse handleDriverAlreadyExistsException(DriverAlreadyExistsException ex) {

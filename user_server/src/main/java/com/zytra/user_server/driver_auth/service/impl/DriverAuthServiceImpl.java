@@ -34,6 +34,19 @@ public class DriverAuthServiceImpl implements DriverAuthService {
         this.driverRefreshTokenService = driverRefreshTokenService;
     }
 
+    /**
+     * Handles driver login authentication.
+     * Validates credentials, checks driver status, decrypts and verifies password,
+     * generates access and refresh tokens, and updates last login timestamp.
+     * 
+     * @param request the DriverLoginRequest containing email and password
+     * @return DriverLoginResponse containing access token, refresh token, and
+     *         driver information
+     * @throws DriverInvalidCredentialException if email is missing or credentials
+     *                                          are invalid
+     * @throws DriverInvalidAccountException    if driver account is not ACTIVE or
+     *                                          password not set
+     */
     @Override
     @Transactional
     public DriverLoginResponse login(DriverLoginRequest request) {
@@ -56,13 +69,10 @@ public class DriverAuthServiceImpl implements DriverAuthService {
             throw new DriverInvalidAccountException("Driver has not set a password, cannot login");
         }
 
-        // Try to decrypt (for encrypted passwords) or compare directly (for legacy
-        // plain text)
         String decryptedPassword;
         try {
             decryptedPassword = PasswordUtil.decrypt(passwordHash);
         } catch (Exception e) {
-            // Legacy plain text password - compare directly
             decryptedPassword = passwordHash;
         }
 
@@ -70,15 +80,12 @@ public class DriverAuthServiceImpl implements DriverAuthService {
             throw new DriverInvalidCredentialException("Invalid Credentials");
         }
 
-        // Generate tokens
         String accessToken = jwtUtil.generateAccessToken(driver);
         String refreshToken = jwtUtil.generateRefreshToken(driver);
         long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
 
-        // Persist refresh token - using driver ID
         driverRefreshTokenService.createRefreshToken(driver.getId(), refreshToken, null, null);
 
-        // Update last login timestamp
         driver.setLastLoginAt(LocalDateTime.now());
         driverRepository.save(driver);
 
@@ -86,6 +93,21 @@ public class DriverAuthServiceImpl implements DriverAuthService {
                 refreshToken, Long.valueOf(expiresIn));
     }
 
+    /**
+     * Registers a new driver account.
+     * Validates input data, checks for duplicate email, encrypts password,
+     * creates driver entity, generates authentication tokens, and updates last
+     * login.
+     * 
+     * @param request the DriverRegisterRequest containing name, email, phone, and
+     *                password
+     * @return DriverRegisterResponse containing access token, refresh token, and
+     *         driver information
+     * @throws DriverInvalidCredentialException if email or password is missing
+     * @throws DriverAlreadyExistsException     if email is already registered
+     * @throws DriverInvalidAccountException    if account status prevents login
+     *                                          (should not occur in registration)
+     */
     @Override
     @Transactional
     public DriverRegisterResponse register(DriverRegisterRequest request) {
@@ -97,15 +119,12 @@ public class DriverAuthServiceImpl implements DriverAuthService {
             throw new DriverInvalidCredentialException("Password is required");
         }
 
-        // Check if driver already exists
         if (driverRepository.existsByEmail(request.getEmail())) {
             throw new DriverAlreadyExistsException("Driver with this email already exists");
         }
 
-        // Encrypt password before storing
         String encryptedPassword = PasswordUtil.encrypt(request.getPassword());
 
-        // Create new driver entity
         DriverEntity driver = DriverEntity.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -113,7 +132,7 @@ public class DriverAuthServiceImpl implements DriverAuthService {
                 .passwordHash(encryptedPassword)
                 .status(DriverStatus.ACTIVE)
                 .role(UserRole.DRIVER)
-                .assignedRoute(null) // Will be assigned later by admin
+                .assignedRoute(null)
                 .build();
 
         if (driver.getStatus() != DriverStatus.ACTIVE) {
@@ -121,18 +140,14 @@ public class DriverAuthServiceImpl implements DriverAuthService {
                     "Driver account is " + driver.getStatus().name() + ", cannot login");
         }
 
-        // Save driver to database first to generate ID
         DriverEntity savedDriver = driverRepository.save(driver);
 
-        // Generate tokens
         String accessToken = jwtUtil.generateAccessToken(savedDriver);
         String refreshToken = jwtUtil.generateRefreshToken(savedDriver);
         long expiresIn = jwtUtil.getAccessTokenExpirySeconds();
 
-        // Persist refresh token - using driver ID
         driverRefreshTokenService.createRefreshToken(savedDriver.getId(), refreshToken, null, null);
 
-        // Update last login timestamp
         savedDriver.setLastLoginAt(LocalDateTime.now());
         driverRepository.save(savedDriver);
 

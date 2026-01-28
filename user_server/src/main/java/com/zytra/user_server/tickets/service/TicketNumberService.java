@@ -15,13 +15,21 @@ public class TicketNumberService {
     private static final String DATA_FOR_RANDOM_STRING = CHAR_LOWER + CHAR_UPPER + NUMBER + SPECIAL_CHARS;
     private static SecureRandom random = new SecureRandom();
 
+    /**
+     * Generates a random ticket number of the specified length.
+     * Uses a combination of lowercase letters, uppercase letters, numbers, and
+     * special characters.
+     * 
+     * @param length the length of the ticket number to generate
+     * @return a randomly generated ticket number
+     * @throws IllegalArgumentException if length is less than 1
+     */
     public String generateTicketNumber(int length) {
         if (length < 1)
             throw new IllegalArgumentException("Length must be positive.");
 
         StringBuilder sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
-            // Pick a random index from the pool of characters
             int rndCharAt = random.nextInt(DATA_FOR_RANDOM_STRING.length());
             char rndChar = DATA_FOR_RANDOM_STRING.charAt(rndCharAt);
 

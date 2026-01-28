@@ -22,9 +22,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * AuthProvider component to wrap the app with authentication context
- */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   
@@ -36,18 +33,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: true,
   });
 
-  /**
-   * Initialize auth state from stored tokens
-   */
   const checkAuth = useCallback(async () => {
     const accessToken = tokenManager.getAccessToken();
     const refreshToken = tokenManager.getRefreshToken();
     const driver = tokenManager.getDriver() as Driver | null;
 
     if (refreshToken && driver) {
-      // Check if access token is expired or missing
       if (!accessToken || tokenManager.isTokenExpired()) {
-        // Token expired or missing, try to refresh
         await refreshAuth();
       } else {
         setAuthState({
@@ -70,9 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /**
-   * Refresh authentication tokens
-   */
   const refreshAuth = useCallback(async () => {
     const refreshToken = tokenManager.getRefreshToken();
 
@@ -104,7 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isLoading: false,
         });
       } else {
-        // Response didn't contain tokens, logout
         tokenManager.clearAuth();
         setAuthState({
           driver: null,
@@ -127,18 +115,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  /**
-   * Login driver
-   */
   const login = useCallback(async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await authApi.login(data);
 
     if (response.status === 'ACTIVE' && response.accessToken && response.refreshToken) {
-      // Store tokens
       tokenManager.setAccessToken(response.accessToken, response.expiresIn);
       tokenManager.setRefreshToken(response.refreshToken);
 
-      // Store driver data
       const driver: Driver = {
         id: response.driverId,
         email: data.email,
@@ -146,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       tokenManager.setDriver(driver);
 
-      // Update auth state
       setAuthState({
         driver,
         accessToken: response.accessToken,
@@ -159,18 +141,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return response;
   }, []);
 
-  /**
-   * Register new driver
-   */
   const register = useCallback(async (data: RegisterRequest): Promise<LoginResponse> => {
     const response = await authApi.register(data);
 
     if (response.status === 'ACTIVE' && response.accessToken && response.refreshToken) {
-      // Store tokens
       tokenManager.setAccessToken(response.accessToken, response.expiresIn);
       tokenManager.setRefreshToken(response.refreshToken);
 
-      // Store driver data
       const driver: Driver = {
         id: response.driverId,
         email: data.email,
@@ -180,7 +157,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       tokenManager.setDriver(driver);
 
-      // Update auth state
       setAuthState({
         driver,
         accessToken: response.accessToken,
@@ -193,9 +169,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return response;
   }, []);
 
-  /**
-   * Logout driver
-   */
   const logout = useCallback(async () => {
     const refreshToken = tokenManager.getRefreshToken();
 
@@ -206,7 +179,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
-      // Clear local state regardless of API call result
       tokenManager.clearAuth();
       setAuthState({
         driver: null,
@@ -216,31 +188,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading: false,
       });
 
-      // Redirect to login
       router.push('/login');
     }
   }, [router]);
 
-  // Check auth on mount
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
-  // Auto-refresh token every 10 seconds if it will expire in 2 minutes
   useEffect(() => {
     const interval = setInterval(() => {
       const accessToken = tokenManager.getAccessToken();
       const refreshToken = tokenManager.getRefreshToken();
 
-      // Only check if user is authenticated
       if (accessToken && refreshToken && authState.isAuthenticated) {
-        // Check if token will expire in 2 minutes (120 seconds)
         if (tokenManager.willExpireSoon(120)) {
           console.log('Access token will expire soon, refreshing...');
           refreshAuth();
         }
       }
-    }, 10000); // Check every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [authState.isAuthenticated, refreshAuth]);
@@ -257,9 +224,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-/**
- * Custom hook to access auth context
- */
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {

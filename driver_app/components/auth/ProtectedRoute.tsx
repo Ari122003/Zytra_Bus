@@ -9,10 +9,6 @@ interface ProtectedRouteProps {
   fallback?: React.ReactNode;
 }
 
-/**
- * ProtectedRoute component that guards routes requiring authentication
- * Redirects to login if driver is not authenticated
- */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   fallback 
@@ -23,13 +19,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Store intended destination for redirect after login
       sessionStorage.setItem('redirectAfterLogin', pathname);
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router, pathname]);
 
-  // Show loading state
   if (isLoading) {
     return (
       fallback || (
@@ -43,11 +37,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If not authenticated, show nothing (will redirect)
   if (!isAuthenticated) {
     return null;
   }
 
-  // Driver is authenticated, render children
   return <>{children}</>;
 };
