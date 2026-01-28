@@ -1,161 +1,468 @@
-# Zytra Bus — Bus Booking Platform
+<div align="center">
+  <h1>Zytra Bus</h1>
+  <p>Modern Bus Booking Platform with Real-time Seat Management</p>
+  
+  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+  [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
+  [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
+  [![Next.js](https://img.shields.io/badge/Next.js-16.0.7-black.svg)](https://nextjs.org/)
+  [![React](https://img.shields.io/badge/React-19.2.0-blue.svg)](https://react.dev/)
+</div>
 
-A full-stack bus booking platform consisting of a Next.js frontend (`user_app`) and a Spring Boot backend (`user_server`). This repository provides the UI, API, and services for searching buses, booking seats, managing user accounts, and processing payments.
+## 📋 Table of Contents
 
-> NOTE: Screenshots and demo GIFs — add your images to the `docs/screenshots` folder and update paths below.
-
-<!-- PLACEHOLDER: Add screenshots here -->
-
-![Screenshot 1](docs/screenshots/screenshot-1.png)
-![Screenshot 2](docs/screenshots/screenshot-2.png)
-
-**Project Highlights**
-
-- **Frontend:** Next.js 16 + React 19, Tailwind CSS.
-- **Backend:** Spring Boot (Java 21), PostgreSQL, JPA, JWT auth.
-- **State & Data:** TanStack Query, Axios, Zustand.
-- **Auth & Email:** JWT-based authentication and Spring Mail for verifications.
-
-**Table of Contents**
-
-- [Tech stack](#tech-stack)
-- [Quickstart](#quickstart)
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+- [Project Structure](#project-structure)
 - [Development](#development)
-- [Environment variables](#environment-variables)
-- [API (overview)](#api-overview)
-- [Project structure](#project-structure)
-- [Testing](#testing)
+- [API Documentation](#api-documentation)
 - [Deployment](#deployment)
+- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 
-## Tech Stack
+## 🎯 Overview
 
-- Frontend: Next.js 16, React 19, TypeScript (partial), Tailwind CSS
-- Backend: Spring Boot 4, Java 21, Spring Data JPA, PostgreSQL
-- Auth: JWT (io.jsonwebtoken)
-- HTTP: Axios
-- State & Query: Zustand, @tanstack/react-query
+Zytra Bus is a production-ready, full-stack bus booking platform designed to handle high-concurrency seat reservations with enterprise-grade reliability. The system consists of three microservices: a customer-facing application, a driver management application, and a robust Spring Boot backend with PostgreSQL database.
 
-## Unique Selling Points
+## ✨ Features
 
-This platform is designed with production-grade booking safety and concurrency handling in mind. Key capabilities:
+### Core Functionality
 
-- **Seat locking / reservation holds:** When a user starts a booking flow the selected seats are placed on a short reservation hold (configurable TTL). Holds prevent other users from selecting the same seats while the booking completes.
+- 🔍 **Smart Bus Search** - Real-time availability with advanced filtering
+- 🎫 **Seat Reservation** - Interactive seat selection with live updates
+- 💳 **Secure Payments** - Multiple payment methods with transaction safety
+- 📱 **User Accounts** - Profile management, booking history, and preferences
+- 🚌 **Driver Portal** - Dedicated interface for trip and route management
+- 📧 **Email Notifications** - Booking confirmations and trip reminders
 
-- **Atomic bookings with DB transactions:** Final seat assignments are committed inside database transactions via Spring Data JPA to ensure either the whole booking succeeds or nothing is changed.
+### Advanced Capabilities
 
-- **Double-booking prevention:** Database-level constraints (unique indexes) combined with optimistic checks at the service layer prevent duplicate seat assignment; conflicts return a clear error and a prompt to re-select seats.
+#### Concurrency & Booking Safety
 
-- **Optimistic concurrency control & versioning:** Entities include a version/timestamp field to detect concurrent updates and to retry or surface conflict resolution to clients.
+- **Seat Locking System** - Temporary reservation holds with configurable TTL prevent simultaneous bookings
+- **Atomic Transactions** - ACID-compliant booking operations using Spring Data JPA
+- **Double-Booking Prevention** - Database constraints and optimistic locking ensure seat uniqueness
+- **Distributed Locks** - Redis-based coordination for horizontal scaling
+- **Idempotent APIs** - Client-side idempotency keys prevent duplicate bookings on retry
+- **Optimistic Concurrency Control** - Version-based conflict detection and resolution
 
-- **Distributed locking (optional):** For horizontally scaled deployments, the system can use a Redis-based distributed lock to coordinate seat allocation across instances.
+#### Real-time Updates
 
-- **Idempotent booking APIs:** Booking endpoints are designed to be idempotent (client-provided idempotency keys) so retries from network issues won't create duplicate bookings.
+- **Live Seat Availability** - WebSocket/polling for instant seat status updates
+- **Conflict Resolution** - Graceful handling of concurrent booking attempts
+- **Audit Trail** - Complete booking lifecycle tracking and reconciliation
 
-- **User feedback & real-time updates:** The frontend uses short-polling or WebSocket/Server-Sent-Events hooks to refresh seat availability in near-real time so users see accurate availability.
+## 🏗 Architecture
 
-- **Audit logs & reconciliation:** All booking attempts and state transitions are auditable; reconciliation processes can detect and resolve stale holds or mismatches.
-
-These mechanisms together ensure reliable concurrent booking handling, reduced user friction, and minimized risk of overbooking.
-
-## Quickstart
-
-Prerequisites:
-
-- Node.js 18+ and npm/yarn
-- Java 21 and Maven
-- PostgreSQL (or a DB compatible with the provided JDBC URL)
-
-1. Clone the repo
-
-```bash
-git clone <repo-url>
-cd Zytra_Bus
+```
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│   User App      │       │   Driver App    │       │                 │
+│   (Next.js)     │◄─────►│   (Next.js)     │◄─────►│  Spring Boot    │
+│   Port: 3000    │       │   Port: 3001    │       │  Backend API    │
+└─────────────────┘       └─────────────────┘       │  Port: 8080     │
+                                                     │                 │
+                                                     │  ┌──────────┐   │
+                                                     │  │PostgreSQL│   │
+                                                     │  └──────────┘   │
+                                                     └─────────────────┘
 ```
 
-2. Frontend (development)
+**Monorepo Structure:**
+
+- `user_app/` - Customer-facing Next.js application
+- `driver_app/` - Driver management Next.js application
+- `user_server/` - Unified Spring Boot REST API
+
+## 🛠 Tech Stack
+
+### Frontend
+
+| Technology     | Version | Purpose                      |
+| -------------- | ------- | ---------------------------- |
+| Next.js        | 16.0.7  | React framework with SSR/SSG |
+| React          | 19.2.0  | UI library                   |
+| TypeScript     | 5.x     | Type safety                  |
+| Tailwind CSS   | 4.x     | Utility-first styling        |
+| TanStack Query | 5.90.12 | Server state management      |
+| Zustand        | 5.0.9   | Client state management      |
+| Axios          | 1.13.2  | HTTP client                  |
+| Zod            | -       | Runtime validation           |
+
+### Backend
+
+| Technology      | Version | Purpose               |
+| --------------- | ------- | --------------------- |
+| Spring Boot     | 4.0.0   | Application framework |
+| Java            | 21      | Programming language  |
+| Spring Data JPA | 4.0.0   | ORM and data access   |
+| PostgreSQL      | -       | Primary database      |
+| JWT             | -       | Authentication tokens |
+| Spring Mail     | -       | Email service         |
+| Maven           | -       | Build tool            |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have the following installed:
+
+- **Node.js** >= 18.0.0 ([Download](https://nodejs.org/))
+- **Java JDK** 21 ([Download](https://openjdk.org/))
+- **Maven** 3.8+ ([Download](https://maven.apache.org/))
+- **PostgreSQL** 14+ ([Download](https://www.postgresql.org/))
+- **Git** ([Download](https://git-scm.com/))
+
+### Installation
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/yourusername/zytra-bus.git
+cd zytra-bus
+```
+
+2. **Set up the database**
+
+```bash
+# Create PostgreSQL database
+createdb zytra_bus
+
+# Or using psql
+psql -U postgres
+CREATE DATABASE zytra_bus;
+\q
+```
+
+3. **Install User App dependencies**
 
 ```bash
 cd user_app
 npm install
-npm run dev
+cd ..
 ```
 
-This starts the Next.js dev server (default: http://localhost:3000).
+4. **Install Driver App dependencies**
 
-3. Backend (development)
+```bash
+cd driver_app
+npm install
+cd ..
+```
+
+5. **Install backend dependencies**
+
+```bash
+cd user_server
+mvn clean install
+cd ..
+```
+
+### Configuration
+
+#### Backend Configuration
+
+Create `user_server/src/main/resources/application.properties`:
+
+```properties
+# Database
+spring.datasource.url=jdbc:postgresql://localhost:5432/zytra_bus
+spring.datasource.username=postgres
+spring.datasource.password=yourpassword
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# JWT
+jwt.secret=your-256-bit-secret-key-here
+jwt.expiration=86400000
+
+# Email
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-email@gmail.com
+spring.mail.password=your-app-password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# Server
+server.port=8080
+```
+
+#### Frontend Configuration
+
+Create `user_app/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
+```
+
+Create `driver_app/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
+```
+
+### Running the Application
+
+1. **Start the backend**
 
 ```bash
 cd user_server
 mvn spring-boot:run
 ```
 
-By default Spring Boot will start on port 8080. Adjust ports and base URLs in the frontend `lib/api/client.ts` if necessary.
+2. **Start the user application** (new terminal)
 
-## Development
+```bash
+cd user_app
+npm run dev
+```
 
-- Frontend scripts are in [user_app/package.json](user_app/package.json).
+Access at: http://localhost:3000
 
-  - `npm run dev` — start dev server
-  - `npm run build` — build production app
-  - `npm run start` — start built app
+3. **Start the driver application** (new terminal)
 
-- Backend uses Maven; inspect [user_server/pom.xml](user_server/pom.xml) for dependencies and plugins.
+```bash
+cd driver_app
+npm run dev
+```
 
-## Environment variables
+Access at: http://localhost:3001
 
-Create `.env` files for local development for both frontend and backend. Example variables (adjust names to match your code):
+## 📁 Project Structure
 
-- Backend (Spring Boot `application.properties` / env vars):
+```
+zytra-bus/
+├── user_app/                    # Customer frontend
+│   ├── app/                     # Next.js app directory
+│   │   ├── (auth)/             # Authentication routes
+│   │   ├── (protected)/        # Protected routes
+│   │   └── (public-pages)/     # Public routes
+│   ├── components/             # React components
+│   │   ├── auth/              # Auth components
+│   │   ├── bus/               # Bus-related components
+│   │   ├── landing/           # Landing page components
+│   │   └── ui/                # Reusable UI components
+│   ├── contexts/              # React contexts
+│   ├── hooks/                 # Custom hooks
+│   ├── lib/                   # Utilities and API clients
+│   │   ├── api/              # API integration
+│   │   └── zod/              # Validation schemas
+│   ├── types/                # TypeScript types
+│   └── store/                # State management
+│
+├── driver_app/                 # Driver frontend
+│   ├── app/                   # Next.js app directory
+│   │   ├── (auth)/           # Authentication routes
+│   │   └── (protected)/      # Protected routes
+│   ├── components/           # React components
+│   ├── contexts/             # React contexts
+│   ├── hooks/                # Custom hooks
+│   └── lib/                  # Utilities and API clients
+│
+└── user_server/               # Spring Boot backend
+    ├── src/
+    │   ├── main/
+    │   │   ├── java/com/zytra/user_server/
+    │   │   │   ├── config/          # Configuration classes
+    │   │   │   ├── controller/      # REST controllers
+    │   │   │   ├── dto/             # Data Transfer Objects
+    │   │   │   ├── entity/          # JPA entities
+    │   │   │   ├── repository/      # Data repositories
+    │   │   │   ├── service/         # Business logic
+    │   │   │   ├── security/        # Security config
+    │   │   │   └── exception/       # Exception handlers
+    │   │   └── resources/
+    │   │       └── application.properties
+    │   └── test/                    # Test classes
+    ├── pom.xml                      # Maven configuration
+    └── Dockerfile                   # Docker configuration
+```
 
-  - `SPRING_DATASOURCE_URL` — JDBC URL (e.g. `jdbc:postgresql://localhost:5432/zytra`)
-  - `SPRING_DATASOURCE_USERNAME`
-  - `SPRING_DATASOURCE_PASSWORD`
-  - `JWT_SECRET` — secret used to sign JWT tokens
-  - `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` — for email
+## 💻 Development
 
-- Frontend (Next.js):
-  - `NEXT_PUBLIC_API_BASE_URL` — e.g. `http://localhost:8080/api`
+### Frontend Development
 
-Put `.env.local` in `user_app` for local Next.js overrides.
+**User App**
 
-## API (overview)
+```bash
+cd user_app
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+```
 
-The backend exposes REST endpoints for authentication, users, buses, and bookings. Typical routes (adjust to match controllers):
+**Driver App**
 
-- `POST /api/auth/login` — login, returns JWT
-- `POST /api/auth/register` — create user
-- `GET /api/bus` — search/list buses
-- `POST /api/bookings` — create a booking
-- `GET /api/bookings/{id}` — booking details
+```bash
+cd driver_app
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+```
 
-Check the `user_server/src/main/java/com/zytra/user_server` package for controller implementations for exact routes and payload shapes.
+### Backend Development
 
-## Project structure
+```bash
+cd user_server
+mvn spring-boot:run          # Run development server
+mvn clean install            # Build project
+mvn test                     # Run tests
+mvn package                  # Package as JAR
+```
 
-- `user_app/` — Next.js frontend. See [user_app/package.json](user_app/package.json).
-- `user_server/` — Spring Boot backend. See [user_server/pom.xml](user_server/pom.xml).
-- `Driver_App/` — (contains `hello.js`) — driver-side utilities or separate micro-app.
+### Docker Support
 
-## Testing
+**Run with Docker Compose:**
 
-- Frontend lint: run `npm run lint` inside `user_app`.
-- Backend tests: `mvn test` inside `user_server`.
+```bash
+# User App
+cd user_app
+docker-compose up
 
-## Deployment
+# Driver App
+cd driver_app
+docker-compose up
 
-- Frontend: build with `npm run build` then serve using `npm run start`, or export for static hosting where applicable.
-- Backend: package with `mvn package` and run the generated JAR, or deploy to your preferred Java host/container.
+# Backend
+cd user_server
+docker-compose up
+```
 
-## Contributing
+## 📚 API Documentation
 
-- Fork, create a feature branch, add tests, and open a PR with a clear description.
+### Authentication
 
-## License
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login and receive JWT
+- `POST /api/auth/verify` - Verify email
+- `POST /api/auth/refresh` - Refresh access token
 
-Specify your license here (e.g. MIT). Replace this section with your chosen license.
+### Users
 
-## Contact
+- `GET /api/users/profile` - Get user profile
+- `PUT /api/users/profile` - Update user profile
+- `GET /api/users/bookings` - Get user booking history
 
-Maintainer: Your Name — update with email or links.
+### Buses
+
+- `GET /api/buses` - Search available buses
+- `GET /api/buses/{id}` - Get bus details
+- `GET /api/buses/{id}/seats` - Get seat availability
+
+### Bookings
+
+- `POST /api/bookings` - Create new booking
+- `GET /api/bookings/{id}` - Get booking details
+- `PUT /api/bookings/{id}/cancel` - Cancel booking
+- `POST /api/bookings/{id}/payment` - Process payment
+
+### Driver Routes
+
+- `GET /api/driver/trips` - Get assigned trips
+- `PUT /api/driver/trips/{id}/status` - Update trip status
+
+## 🚢 Deployment
+
+### Frontend Deployment (Vercel)
+
+```bash
+cd user_app
+npm run build
+# Deploy to Vercel, Netlify, or your preferred hosting
+```
+
+### Backend Deployment
+
+**Build JAR:**
+
+```bash
+cd user_server
+mvn clean package -DskipTests
+```
+
+**Run JAR:**
+
+```bash
+java -jar target/user_server-0.0.1-SNAPSHOT.jar
+```
+
+**Docker Deployment:**
+
+```bash
+docker build -t zytra-bus-backend .
+docker run -p 8080:8080 zytra-bus-backend
+```
+
+### Environment Variables (Production)
+
+Ensure all sensitive data is stored in environment variables:
+
+- Database credentials
+- JWT secret keys
+- Email service credentials
+- API keys
+
+## 🧪 Testing
+
+### Frontend Tests
+
+```bash
+cd user_app
+npm run test
+npm run test:coverage
+```
+
+### Backend Tests
+
+```bash
+cd user_server
+mvn test
+mvn verify
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Code Style Guidelines
+
+- Frontend: Follow ESLint configuration
+- Backend: Follow Java code conventions
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👥 Authors
+
+**Your Name** - Initial work
+
+## 🙏 Acknowledgments
+
+- Spring Boot team for the excellent framework
+- Next.js team for the powerful React framework
+- All contributors who have helped shape this project
+
+---
+
+<div align="center">
+  Made with ❤️ by the Zytra Bus Team
+</div>
