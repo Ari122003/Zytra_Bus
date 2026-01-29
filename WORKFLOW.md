@@ -28,7 +28,7 @@ This document provides a detailed walkthrough of the Zytra Bus platform, illustr
 
 The user first arrives at the landing page featuring the platform's value propositions and call-to-action buttons.
 
-![Landing Page](docs/screenshots/user/01-landing-page.png)
+![Landing Page](docs/landing.png)
 
 **Key Features:**
 
