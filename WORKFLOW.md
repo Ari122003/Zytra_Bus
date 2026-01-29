@@ -43,7 +43,7 @@ The user first arrives at the landing page featuring the platform's value propos
 
 New users can create an account by providing basic information.
 
-![Registration Form](docs/screenshots/user/02-registration.png)
+![Registration Form](docs/register.png)
 
 **Registration Flow:**
 
@@ -67,7 +67,7 @@ New users can create an account by providing basic information.
 
 Users must verify their email address before accessing the platform.
 
-![Email Verification](docs/screenshots/user/03-email-verification.png)
+![Email Verification](docs/otp.png)
 
 **Verification Flow:**
 
@@ -83,7 +83,7 @@ Users must verify their email address before accessing the platform.
 
 Registered users can log in to access the booking platform.
 
-![Login Page](docs/screenshots/user/04-login.png)
+![Login Page](docs/login.png)
 
 **Login Flow:**
 
@@ -102,7 +102,7 @@ Registered users can log in to access the booking platform.
 
 Users can search for available buses based on their travel requirements.
 
-![Bus Search](docs/screenshots/user/05-bus-search.png)
+![Bus Search](docs/bus_search.png)
 
 **Search Parameters:**
 
@@ -126,7 +126,7 @@ Users can search for available buses based on their travel requirements.
 
 Available buses are displayed with key information for comparison.
 
-![Search Results](docs/screenshots/user/06-search-results.png)
+![Search Results](docs/bus_search_result.png)
 
 **Displayed Information:**
 
@@ -150,7 +150,7 @@ Available buses are displayed with key information for comparison.
 
 Detailed view of selected bus with comprehensive information.
 
-![Bus Details](docs/screenshots/user/07-bus-details.png)
+![Bus Details](docs/bus_details.png)
 
 **Details Include:**
 
@@ -195,29 +195,13 @@ Visual representation of the bus seat layout for selection.
 
 ---
 
-#### 3.2 Passenger Details
-
-User enters details for each selected seat.
-
-![Passenger Details](docs/screenshots/user/09-passenger-details.png)
-
-**Required Information:**
-
-- Passenger name
-- Age
-- Gender
-- Contact number (for primary passenger)
-- Emergency contact (optional)
-
----
-
 ### 4. Booking Process
 
 #### 4.1 Booking Summary
 
 Review all booking details before payment.
 
-![Booking Summary](docs/screenshots/user/10-booking-summary.png)
+![Booking Summary](docs/payment.png)
 
 **Summary Includes:**
 
@@ -270,79 +254,13 @@ POST /api/bookings
 
 ---
 
-### 5. Payment Processing
-
-#### 5.1 Payment Methods
-
-Users can choose from multiple payment options.
-
-![Payment Methods](docs/screenshots/user/11-payment-methods.png)
-
-**Available Methods:**
-
-- Credit/Debit Cards
-- UPI/Digital Wallets
-- Net Banking
-- Pay Later options
-
----
-
-#### 5.2 Payment Gateway
-
-Secure payment processing interface.
-
-![Payment Processing](docs/screenshots/user/12-payment-gateway.png)
-
-**Payment Flow:**
-
-1. User selects payment method
-2. Redirected to payment gateway
-3. Enters payment credentials
-4. Payment processed securely
-5. Callback to `POST /api/bookings/{id}/payment`
-6. Booking status updated
-7. Confirmation email sent
-
----
-
-#### 5.3 Payment Success
-
-Confirmation of successful booking and payment.
-
-![Payment Success](docs/screenshots/user/13-payment-success.png)
-
-**Success Page:**
-
-- Booking confirmation number
-- E-ticket download button
-- Email confirmation sent
-- SMS notification (if enabled)
-- Option to view booking details
-- Add to calendar functionality
-
----
-
 ### 6. Booking Management
 
-#### 6.1 User Dashboard
-
-Centralized view of all user bookings and account information.
-
-![User Dashboard](docs/screenshots/user/14-dashboard.png)
-
-**Dashboard Features:**
-
-- Upcoming trips
-- Past bookings
-- Cancelled bookings
-- Quick actions (cancel, reschedule, download ticket)
-
----
-
-#### 6.2 Booking Details
+#### 6.1 Booking Details
 
 Detailed view of individual booking.
 
+![Ticket](docs/ticket.png)
 ![Booking Details](docs/screenshots/user/15-booking-details.png)
 
 **Information Displayed:**
@@ -357,7 +275,7 @@ Detailed view of individual booking.
 
 ---
 
-#### 6.3 My Bookings
+#### 6.2 My Bookings
 
 List of all user bookings with filtering options.
 
@@ -373,11 +291,11 @@ List of all user bookings with filtering options.
 
 ---
 
-#### 6.4 Account Settings
+#### 6.3 Account Settings
 
 User profile and preferences management.
 
-![Account Settings](docs/screenshots/user/17-account-settings.png)
+![Account Settings](docs/Profile.png)
 
 **Settings Include:**
 
@@ -417,7 +335,7 @@ Dedicated login interface for bus drivers and operators.
 
 Overview of assigned trips and current status.
 
-![Driver Dashboard](docs/screenshots/driver/02-driver-dashboard.png)
+![Driver Dashboard](docs/driver_dashboard.png)
 
 **Dashboard Features:**
 
@@ -429,28 +347,12 @@ Overview of assigned trips and current status.
 
 ---
 
-#### 2.2 Trip Details
-
-Comprehensive information about assigned trip.
-
-![Trip Details](docs/screenshots/driver/03-trip-details.png)
-
-**Trip Information:**
-
-- Route details
-- Departure/arrival times
-- Passenger list with seat numbers
-- Boarding point details
-- Total passengers count
-- Contact information
-
----
-
-#### 2.3 Passenger List
+#### 2.2 Passenger List
 
 View all passengers for the current trip.
 
-![Passenger List](docs/screenshots/driver/04-passenger-list.png)
+![Passenger List](docs/passengers.png)
+![Verify Ticket](docs/verify.png)
 
 **Features:**
 
@@ -459,48 +361,6 @@ View all passengers for the current trip.
 - Mark passengers as boarded
 - Emergency contact access
 - Seat-wise passenger mapping
-
----
-
-### 3. Trip Updates
-
-#### 3.1 Status Updates
-
-Drivers can update trip status in real-time.
-
-![Status Update](docs/screenshots/driver/05-status-update.png)
-
-**Status Options:**
-
-- Not Started
-- In Progress
-- Delayed
-- Completed
-- Cancelled
-
-**Update Flow:**
-
-1. Driver selects new status
-2. Request to `PUT /api/driver/trips/{id}/status`
-3. Backend updates trip status
-4. Passengers notified via email/SMS
-5. Dashboard updates reflected
-
----
-
-#### 3.2 Trip History
-
-Historical record of completed trips.
-
-![Trip History](docs/screenshots/driver/06-trip-history.png)
-
-**History Features:**
-
-- Completed trips log
-- Performance metrics
-- Passenger feedback
-- Earnings summary
-- Export reports
 
 ---
 
@@ -603,22 +463,7 @@ User A                    Backend                      User B
 
 ---
 
-## Real-time Features
-
-### 1. Live Seat Availability
-
-![Real-time Updates](docs/screenshots/system/01-realtime-updates.png)
-
-**Implementation:**
-
-- WebSocket connection for instant updates
-- Fallback to short-polling (every 5 seconds)
-- Automatic UI refresh on seat status change
-- Visual indicators for seat state transitions
-
----
-
-### 2. Notifications System
+### 1. Notifications System
 
 ![Notifications](docs/screenshots/system/02-notifications.png)
 
@@ -636,27 +481,6 @@ User A                    Backend                      User B
 - In-app notifications
 - SMS (optional integration)
 - Push notifications (Progressive Web App)
-
----
-
-### 3. Error Handling
-
-![Error Handling](docs/screenshots/system/03-error-handling.png)
-
-**User-Friendly Errors:**
-
-- Seat already booked
-- Payment failed
-- Session timeout
-- Network issues
-- Invalid input
-
-**Technical Errors:**
-
-- Logged for debugging
-- Graceful degradation
-- Retry mechanisms
-- Fallback options
 
 ---
 
