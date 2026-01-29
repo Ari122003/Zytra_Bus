@@ -9,7 +9,16 @@
   [![React](https://img.shields.io/badge/React-19.2.0-blue.svg)](https://react.dev/)
 </div>
 
-## 📋 Table of Contents
+## �️ Database Schema
+
+<div align="center">
+  <img src="docs/db.png" alt="Zytra Bus Database Schema" width="100%">
+  <p><i>Entity Relationship Diagram showing the complete database architecture</i></p>
+</div>
+
+The database schema is designed to support high-concurrency booking operations with optimized relationships for seat management, user authentication, and payment processing. For detailed schema documentation, see [database_schema.dbml](user_server/database_schema.dbml).
+
+## �📋 Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)

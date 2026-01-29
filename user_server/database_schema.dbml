@@ -1,0 +1,308 @@
+// Zytra Bus User Server - Database Schema
+// Generated: 2026-01-29
+// DBML Documentation: https://www.dbml.org/docs/
+
+Project zytra_bus_system {
+  database_type: 'PostgreSQL'
+  Note: 'Bus booking and management system database schema'
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
+Table users {
+  id bigint [pk, increment]
+  email varchar(255) [not null, unique, note: 'Unique user email']
+  name varchar(255) [not null]
+  phone varchar(255) [not null, unique]
+  date_of_birth timestamp [not null]
+  password_hash varchar(255) [not null]
+  status varchar(20) [not null, note: 'ACTIVE, INACTIVE, SUSPENDED']
+  role varchar(20) [not null, note: 'USER, ADMIN, DRIVER', default: 'USER']
+  image_url varchar(255)
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp
+  last_login_at timestamp
+
+  indexes {
+    email [name: 'idx_users_email']
+    phone [name: 'idx_users_phone']
+  }
+  
+  Note: 'User accounts for passengers'
+}
+
+Table otps {
+  id bigint [pk, increment]
+  email varchar(255) [not null, unique]
+  otp_hash varchar(255) [not null]
+  expires_at timestamp [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    email [name: 'idx_otps_email']
+  }
+  
+  Note: 'OTP verification for user authentication'
+}
+
+Table refresh_tokens {
+  id bigint [pk, increment]
+  token_hash varchar(255) [not null, unique]
+  user_id bigint [not null, ref: > users.id]
+  issued_at timestamp [not null]
+  expires_at timestamp [not null]
+  last_used_at timestamp
+  revoked boolean [not null, default: false]
+  device_info varchar(255)
+  ip_address varchar(255)
+
+  indexes {
+    token_hash [name: 'idx_refresh_tokens_token_hash']
+    user_id [name: 'idx_refresh_tokens_user_id']
+  }
+  
+  Note: 'JWT refresh tokens for user sessions'
+}
+
+// ============================================
+// DRIVER MANAGEMENT
+// ============================================
+
+Table drivers {
+  id bigint [pk, increment]
+  email varchar(255) [not null, unique]
+  name varchar(255) [not null]
+  phone varchar(255) [not null]
+  password_hash varchar(255) [not null]
+  assigned_route_id bigint [not null, ref: > routes.id]
+  status varchar(20) [not null, default: 'ACTIVE', note: 'ACTIVE, INACTIVE, ON_LEAVE, SUSPENDED']
+  role varchar(20) [not null, default: 'DRIVER']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+  last_login_at timestamp
+
+  indexes {
+    email [name: 'idx_driver_email']
+    assigned_route_id [name: 'idx_driver_route']
+    status [name: 'idx_driver_status']
+  }
+  
+  Note: 'Driver accounts and assignments'
+}
+
+Table driver_refresh_tokens {
+  id bigint [pk, increment]
+  token_hash varchar(512) [not null, unique]
+  driver_id bigint [not null, ref: > drivers.id]
+  issued_at timestamp [not null]
+  expires_at timestamp [not null]
+  last_used_at timestamp
+  revoked boolean [not null, default: false]
+  device_info varchar(500)
+  ip_address varchar(45)
+
+  indexes {
+    token_hash [name: 'idx_driver_refresh_token_hash']
+    driver_id [name: 'idx_driver_refresh_driver_id']
+    expires_at [name: 'idx_driver_refresh_expires_at']
+  }
+  
+  Note: 'JWT refresh tokens for driver sessions'
+}
+
+// ============================================
+// ROUTES & SCHEDULES
+// ============================================
+
+Table routes {
+  id bigint [pk, increment]
+  source varchar(100) [not null]
+  destination varchar(100) [not null]
+  distance_km int [not null]
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    (source, destination) [unique, name: 'uq_route']
+  }
+  
+  Note: 'Bus routes between cities'
+}
+
+Table bus {
+  id bigint [pk, increment]
+  bus_number varchar(20) [not null, unique]
+  total_seats int [not null]
+  description varchar(255) [not null]
+  created_at timestamp [not null, default: `now()`]
+
+  indexes {
+    bus_number [name: 'idx_bus_search']
+  }
+  
+  Note: 'Bus fleet information'
+}
+
+Table schedules {
+  id bigint [pk, increment]
+  route_id bigint [not null, ref: > routes.id]
+  bus_id bigint [not null, ref: > bus.id]
+  departure_time time [not null]
+  arrival_time time [not null]
+  frequency varchar(20) [not null, note: 'DAILY, WEEKLY, WEEKENDS, etc.']
+  active_from date [not null]
+  active_to date [not null]
+  status varchar(20) [not null, note: 'ACTIVE, INACTIVE, CANCELLED']
+
+  indexes {
+    route_id [name: 'idx_schedule_route']
+  }
+  
+  Note: 'Recurring bus schedules'
+}
+
+// ============================================
+// TRIPS & SEATS
+// ============================================
+
+Table trips {
+  id bigint [pk, increment]
+  schedule_id bigint [not null, ref: > schedules.id]
+  travel_date date [not null]
+  available_seats int [not null]
+  fare decimal(10,2) [not null]
+  driver_id bigint [ref: - drivers.id, note: 'One-to-one relationship']
+  status varchar(20) [not null, note: 'SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED']
+  seat_status varchar(20) [not null, note: 'AVAILABLE, FILLING_FAST, SOLD_OUT']
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    travel_date [name: 'idx_trip_search']
+    (schedule_id, travel_date) [unique, name: 'uq_trip']
+  }
+  
+  Note: 'Individual trip instances for specific dates'
+}
+
+Table seats {
+  id bigint [pk, increment]
+  trip_id bigint [not null, ref: > trips.id, note: 'ON DELETE CASCADE']
+  seat_number varchar(5) [not null]
+  status varchar(20) [not null, note: 'AVAILABLE, LOCKED, BOOKED']
+  booking_id bigint [ref: > bookings.id]
+  locked_until timestamp
+  lock_owner_id bigint [ref: > users.id]
+
+  indexes {
+    trip_id [name: 'idx_seat_trip']
+    status [name: 'idx_seat_status']
+    lock_owner_id [name: 'idx_seat_lock_owner_id']
+    (trip_id, seat_number) [unique, name: 'uq_seat_trip_number']
+  }
+  
+  Note: 'Individual seats for each trip with locking mechanism'
+}
+
+// ============================================
+// BOOKINGS & PAYMENTS
+// ============================================
+
+Table bookings {
+  id bigint [pk, increment]
+  user_id bigint [not null, ref: > users.id]
+  trip_id bigint [not null, ref: > trips.id]
+  seat_count int [not null]
+  total_amount decimal(10,2) [not null]
+  booking_status varchar(20) [note: 'PENDING, CONFIRMED, CANCELLED, EXPIRED']
+  booking_reference varchar(255) [unique]
+  created_at timestamp [default: `now()`]
+
+  indexes {
+    user_id [name: 'idx_booking_user']
+    booking_reference [unique, name: 'uq_booking_reference']
+  }
+  
+  Note: 'User bookings for trips'
+}
+
+Table booking_seats {
+  booking_id bigint [not null, ref: > bookings.id, note: 'ON DELETE CASCADE']
+  seat_id bigint [not null, ref: > seats.id]
+
+  indexes {
+    (booking_id, seat_id) [pk]
+  }
+  
+  Note: 'Junction table linking bookings to seats'
+}
+
+Table payments {
+  id bigint [pk, increment]
+  booking_id bigint [not null, ref: > bookings.id]
+  payment_reference varchar(50) [not null, unique]
+  payment_method varchar(30) [not null]
+  payment_status varchar(20) [not null, note: 'PENDING, COMPLETED, FAILED, REFUNDED']
+  amount decimal(10,2) [not null]
+  paid_at timestamp
+
+  indexes {
+    payment_reference [unique, name: 'uq_payment_reference']
+  }
+  
+  Note: 'Payment transactions for bookings'
+}
+
+// ============================================
+// TICKETS
+// ============================================
+
+Table tickets {
+  id bigint [pk, increment]
+  booking_id bigint [not null, unique, ref: - bookings.id, note: 'One-to-one relationship']
+  ticket_number varchar(50) [not null]
+  qr_code_data text [not null]
+  valid_until timestamp [not null]
+  generated_at timestamp [default: `now()`]
+
+  indexes {
+    booking_id [unique, name: 'uq_ticket_booking']
+  }
+  
+  Note: 'Digital tickets with QR codes for bookings'
+}
+
+// ============================================
+// RELATIONSHIPS SUMMARY
+// ============================================
+
+// User Authentication:
+// users 1--* refresh_tokens
+// users 1--* bookings
+
+// Driver Management:
+// drivers *--1 routes (assigned_route)
+// drivers 1--* driver_refresh_tokens
+// drivers 1--1 trips (driver assignment)
+
+// Route Planning:
+// routes 1--* schedules
+// routes 1--* drivers
+// bus 1--* schedules
+
+// Trip Management:
+// schedules 1--* trips
+// trips 1--* seats
+// trips 1--* bookings
+// drivers 1--1 trips
+
+// Booking Flow:
+// users 1--* bookings
+// trips 1--* bookings
+// bookings *--* seats (via booking_seats junction)
+// bookings 1--* payments
+// bookings 1--1 tickets
+
+// Seat Locking:
+// seats *--1 users (lock_owner)
+// seats *--1 bookings
