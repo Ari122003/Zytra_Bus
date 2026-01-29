@@ -174,9 +174,9 @@ Visual representation of the bus seat layout for selection.
 **Seat Status Legend:**
 
 - 🟢 **Available** - Can be selected
-- 🔴 **Booked** - Already reserved
+- 🔴 **Selected** - Currently selected by you
+- ⚪ **Booked** - Already reserved
 - 🟡 **On Hold** - Temporarily locked by another user
-- 🔵 **Selected** - Currently selected by you
 
 **Selection Flow:**
 
@@ -709,26 +709,6 @@ User A                    Backend                      User B
 - CORS configuration
 - API versioning
 - Security headers
-
----
-
-## Mobile Responsiveness
-
-### Mobile Views
-
-The application is fully responsive across all device sizes.
-
-![Mobile Home](docs/screenshots/mobile/01-mobile-home.png)
-_Mobile home screen_
-
-![Mobile Search](docs/screenshots/mobile/02-mobile-search.png)
-_Mobile search interface_
-
-![Mobile Seat Selection](docs/screenshots/mobile/03-mobile-seats.png)
-_Mobile seat selection_
-
-![Mobile Booking](docs/screenshots/mobile/04-mobile-booking.png)
-_Mobile booking summary_
 
 ---
 

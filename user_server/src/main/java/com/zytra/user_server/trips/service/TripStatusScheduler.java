@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -57,11 +58,19 @@ public class TripStatusScheduler {
      */
     private int markTripsAsOngoing() {
         LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
         LocalTime currentTime = LocalTime.now();
 
-        List<TripEntity> activeTrips = tripRepository.findActiveTripsByDate(TripStatus.ACTIVE, today);
+        // Get active trips from today and yesterday (for overnight trips)
+        List<TripEntity> activeTripsToday = tripRepository.findActiveTripsByDate(TripStatus.ACTIVE, today);
+        List<TripEntity> activeTripsYesterday = tripRepository.findActiveTripsByDate(TripStatus.ACTIVE, yesterday);
 
-        log.info("{} ACTIVE trips found for {}", activeTrips.size(), today);
+        List<TripEntity> activeTrips = new ArrayList<>();
+        activeTrips.addAll(activeTripsToday);
+        activeTrips.addAll(activeTripsYesterday);
+
+        log.info("{} ACTIVE trips found ({} from today, {} from yesterday)",
+                activeTrips.size(), activeTripsToday.size(), activeTripsYesterday.size());
 
         if (activeTrips.isEmpty()) {
             return 0;
@@ -118,11 +127,19 @@ public class TripStatusScheduler {
      */
     private int markTripsAsCompleted() {
         LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
         LocalTime currentTime = LocalTime.now();
 
-        List<TripEntity> ongoingTrips = tripRepository.findOngoingTripsByDate(TripStatus.ONGOING, today);
+        // Get ongoing trips from today and yesterday (for overnight trips)
+        List<TripEntity> ongoingTripsToday = tripRepository.findOngoingTripsByDate(TripStatus.ONGOING, today);
+        List<TripEntity> ongoingTripsYesterday = tripRepository.findOngoingTripsByDate(TripStatus.ONGOING, yesterday);
 
-        log.info("{} ONGOING trips found for {}", ongoingTrips.size(), today);
+        List<TripEntity> ongoingTrips = new ArrayList<>();
+        ongoingTrips.addAll(ongoingTripsToday);
+        ongoingTrips.addAll(ongoingTripsYesterday);
+
+        log.info("{} ONGOING trips found ({} from today, {} from yesterday)",
+                ongoingTrips.size(), ongoingTripsToday.size(), ongoingTripsYesterday.size());
 
         if (ongoingTrips.isEmpty()) {
             return 0;
