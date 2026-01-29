@@ -64,7 +64,20 @@ const SeatButton: React.FC<{
   const price =  fare
   const isAvailable = !seat.status || seat.status === 'AVAILABLE'
 
-  // Unavailable seat (BOOKED, LOCKED, or UNAVAILABLE)
+  // Locked by another user - show warning color
+  if (seat.status === 'LOCKED_BY_OTHER') {
+    return (
+      <button
+        disabled
+        className={`${baseClasses} bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border-2 border-amber-500 cursor-not-allowed`}
+        title={`Seat ${seat.seatNumber} - Locked by another user`}
+      >
+        {seat.seatNumber}
+      </button>
+    )
+  }
+
+  // Unavailable seat (BOOKED or UNAVAILABLE)
   if (!isAvailable) {
     return (
       <button
@@ -363,6 +376,10 @@ export default function BookingPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-primary rounded" />
                   <span className="text-sm text-muted-foreground">Selected</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-500 rounded" />
+                  <span className="text-sm text-muted-foreground">Locked by other</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded" />

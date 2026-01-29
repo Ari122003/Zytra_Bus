@@ -44,7 +44,7 @@ export const busApi = {
     const now = new Date();
 
     // Calculate seat availability status based on booking and lock state
-    // Locked seats show as unavailable unless owned by current user
+    // Locked seats show as LOCKED_BY_OTHER unless owned by current user
     data.seatMatrix = data.seatMatrix.map(row =>
       row.map(seat => {
         let status: SeatStatus = 'AVAILABLE';
@@ -57,7 +57,7 @@ export const busApi = {
             if (seat.lockOwner === currentUserId) {
               status = 'AVAILABLE';
             } else {
-              status = 'UNAVAILABLE';
+              status = 'LOCKED_BY_OTHER';
             }
           } else {
             status = 'AVAILABLE';

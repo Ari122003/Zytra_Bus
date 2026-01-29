@@ -169,7 +169,7 @@ Detailed view of selected bus with comprehensive information.
 
 Visual representation of the bus seat layout for selection.
 
-![Seat Selection](docs/screenshots/user/08-seat-selection.png)
+![Seat Selection](docs/seats.png)
 
 **Seat Status Legend:**
 
@@ -261,7 +261,7 @@ POST /api/bookings
 Detailed view of individual booking.
 
 ![Ticket](docs/ticket.png)
-![Booking Details](docs/screenshots/user/15-booking-details.png)
+![Booking Details](docs/booking.png)
 
 **Information Displayed:**
 
@@ -279,7 +279,7 @@ Detailed view of individual booking.
 
 List of all user bookings with filtering options.
 
-![My Bookings](docs/screenshots/user/16-my-bookings.png)
+![My Bookings](docs/all.png)
 
 **Features:**
 

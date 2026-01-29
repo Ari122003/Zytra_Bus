@@ -9,16 +9,7 @@
   [![React](https://img.shields.io/badge/React-19.2.0-blue.svg)](https://react.dev/)
 </div>
 
-## �️ Database Schema
-
-<div align="center">
-  <img src="docs/db.png" alt="Zytra Bus Database Schema" width="100%">
-  <p><i>Entity Relationship Diagram showing the complete database architecture</i></p>
-</div>
-
-The database schema is designed to support high-concurrency booking operations with optimized relationships for seat management, user authentication, and payment processing. For detailed schema documentation, see [database_schema.dbml](user_server/database_schema.dbml).
-
-## �📋 Table of Contents
+## 📋 Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -88,6 +79,15 @@ Zytra Bus is a production-ready, full-stack bus booking platform designed to han
 - `user_app/` - Customer-facing Next.js application
 - `driver_app/` - Driver management Next.js application
 - `user_server/` - Unified Spring Boot REST API
+
+### Database Schema
+
+<div align="center">
+  <img src="docs/db.png" alt="Zytra Bus Database Schema" width="100%">
+  <p><i>Entity Relationship Diagram showing the complete database architecture</i></p>
+</div>
+
+The database schema is designed to support high-concurrency booking operations with optimized relationships for seat management, user authentication, and payment processing. For detailed schema documentation, see [database_schema.dbml](user_server/database_schema.dbml).
 
 ## 🛠 Tech Stack
 

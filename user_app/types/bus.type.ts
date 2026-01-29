@@ -22,7 +22,7 @@ export interface SearchBusRequest {
   currentTime?: string;
 }
 
-export type SeatStatus = 'AVAILABLE' | 'UNAVAILABLE';
+export type SeatStatus = 'AVAILABLE' | 'UNAVAILABLE' | 'LOCKED_BY_OTHER';
 
 export interface Seat {
   seatNumber: string;
