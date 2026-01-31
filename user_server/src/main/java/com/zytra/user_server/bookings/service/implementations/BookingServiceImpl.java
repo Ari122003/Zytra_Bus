@@ -26,6 +26,9 @@ import com.zytra.user_server.bookings.repository.BookingSeatRepository;
 import com.zytra.user_server.bookings.service.BookingService;
 import com.zytra.user_server.enums.BookingStatus;
 import com.zytra.user_server.enums.SeatStatus;
+import com.zytra.user_server.Notification.EventData;
+import com.zytra.user_server.Notification.EventType;
+import com.zytra.user_server.Notification.NotificationManager;
 import com.zytra.user_server.seat.entity.SeatEntity;
 import com.zytra.user_server.seat.repository.SeatRepository;
 import com.zytra.user_server.tickets.entity.TicketEntity;
@@ -52,6 +55,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingSeatRepository bookingSeatRepository;
     private final TicketService ticketService;
     private final TicketRepository ticketRepository;
+    private final NotificationManager notificationManager;
 
     /**
      * Processes a booking for selected seats on a trip.
@@ -134,7 +138,40 @@ public class BookingServiceImpl implements BookingService {
         ticketService.generateTicket(booking);
         tripRepository.save(trip);
 
+        // Send booking confirmation notification
+        sendBookingConfirmationNotification(user, trip, seats);
+
         return BookingResponse.builder().message("Booking Successful").build();
+    }
+
+    /**
+     * Sends booking confirmation notification email to the user.
+     * 
+     * @param user  the user who made the booking
+     * @param trip  the trip that was booked
+     * @param seats the list of booked seats
+     */
+    private void sendBookingConfirmationNotification(UserEntity user, TripEntity trip, List<SeatEntity> seats) {
+        try {
+            List<String> seatNumbers = seats.stream()
+                    .map(SeatEntity::getSeatNumber)
+                    .toList();
+
+            EventData eventData = EventData.builder()
+                    .eventType(EventType.BOOKING_CONFIRMED)
+                    .email(user.getEmail())
+                    .userName(user.getName())
+                    .start(trip.getSchedule().getRoute().getSource())
+                    .end(trip.getSchedule().getRoute().getDestination())
+                    .date(trip.getTravelDate().toString())
+                    .departureTime(trip.getSchedule().getDepartureTime().toString())
+                    .seatNumber(seatNumbers)
+                    .build();
+
+            notificationManager.notifyObservers(eventData);
+        } catch (Exception e) {
+            System.err.println("Failed to send booking confirmation notification: " + e.getMessage());
+        }
     }
 
     /**

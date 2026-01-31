@@ -1,5 +1,7 @@
 package com.zytra.user_server.bookings.repository;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -9,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.zytra.user_server.bookings.dto.BookingDetails;
 import com.zytra.user_server.bookings.entity.BookingEntity;
+import com.zytra.user_server.enums.BookingStatus;
 
 public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
 
@@ -52,5 +55,24 @@ public interface BookingRepository extends JpaRepository<BookingEntity, Long> {
                         "LEFT JOIN FETCH b.ticket " +
                         "WHERE b.trip.id = :tripId")
         List<BookingEntity> findByTripIdWithUser(@Param("tripId") Long tripId);
+
+        /**
+         * Fetches confirmed bookings for trips departing today within a specific time
+         * window.
+         * Used for sending trip reminder notifications.
+         */
+        @Query("SELECT b FROM BookingEntity b " +
+                        "JOIN FETCH b.user u " +
+                        "JOIN FETCH b.trip t " +
+                        "JOIN FETCH t.schedule s " +
+                        "JOIN FETCH s.route r " +
+                        "WHERE t.travelDate = :travelDate " +
+                        "AND s.departureTime BETWEEN :startTime AND :endTime " +
+                        "AND b.bookingStatus = :status")
+        List<BookingEntity> findByTravelDateAndDepartureTimeBetweenAndStatus(
+                        @Param("travelDate") LocalDate travelDate,
+                        @Param("startTime") LocalTime startTime,
+                        @Param("endTime") LocalTime endTime,
+                        @Param("status") BookingStatus status);
 
 }

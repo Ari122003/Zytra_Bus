@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Verification</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+        .content {
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .otp-box {
+            background-color: #f8f9fa;
+            border: 2px dashed #4CAF50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        .otp-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .otp-code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+            letter-spacing: 5px;
+            font-family: 'Courier New', monospace;
+        }
+        .expiry-info {
+            font-size: 14px;
+            color: #888;
+            margin-top: 15px;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .warning p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #856404;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #999;
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .brand {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>🚌 Zytra Bus</h1>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Hello <span th:text="${name}">User</span>,</p>
+            
+            <p class="message">
+                We received a request to verify your account. Please use the following One-Time Password (OTP) to complete your verification:
+            </p>
+            
+            <div class="otp-box">
+                <div class="otp-label">Your OTP Code</div>
+                <div class="otp-code" th:text="${otp}">123456</div>
+                <div class="expiry-info">⏰ Valid for <span th:text="${expiryMinutes}">10</span> minutes</div>
+            </div>
+            
+            <div class="warning">
+                <p><strong>⚠️ Security Notice:</strong></p>
+                <p>• Do not share this OTP with anyone</p>
+                <p>• Zytra Bus will never ask for your OTP via phone or email</p>
+                <p>• If you didn't request this code, please ignore this email</p>
+            </div>
+            
+            <p class="message">
+                If you have any questions or need assistance, please contact our support team.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from <span class="brand">Zytra Bus</span></p>
+            <p>© <span th:text="${#dates.year(#dates.createNow())}">2026</span> Zytra Bus. All rights reserved.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

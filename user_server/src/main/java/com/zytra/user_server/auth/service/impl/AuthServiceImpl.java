@@ -3,6 +3,7 @@ package com.zytra.user_server.auth.service.impl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.zytra.user_server.Notification.EmailService;
 import com.zytra.user_server.auth.dto.request.LoginRequest;
 import com.zytra.user_server.auth.dto.response.LoginResponse;
 import com.zytra.user_server.auth.entity.OtpEntity;
@@ -13,13 +14,14 @@ import com.zytra.user_server.auth.exception.InvalidUserException;
 import com.zytra.user_server.auth.repository.OtpRepository;
 import com.zytra.user_server.user.repository.UserRepository;
 import com.zytra.user_server.auth.service.AuthService;
-import com.zytra.user_server.auth.service.EmailService;
 import com.zytra.user_server.auth.service.RefreshTokenService;
 import com.zytra.user_server.util.OtpUtil;
 import com.zytra.user_server.util.PasswordUtil;
 import com.zytra.user_server.util.JwtUtil;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -117,7 +119,10 @@ public class AuthServiceImpl implements AuthService {
         otpEntity.setExpiresAt(expiryTime);
         otpRepository.save(otpEntity);
 
-        emailService.sendEmail(request.getEmail(), otp);
+        Map<String, Object> otpVars = new HashMap<>();
+        otpVars.put("otp", otp);
+        otpVars.put("expiryMinutes", 5);
+        emailService.sendEmail(request.getEmail(), "Your OTP for Verification", "emails/otp-verification", otpVars);
 
         return new LoginResponse("OTP sent successfully", UserStatus.PENDING_VERIFICATION);
     }
