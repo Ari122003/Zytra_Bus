@@ -71,8 +71,6 @@ public class TripServiceImpl implements TripService {
         RouteEntity route = schedule.getRoute();
         BusEntity bus = schedule.getBus();
 
-        List<List<SeatDTO>> seatMatrix = buildSeatMatrix(tripEntity);
-
         int availableSeats = tripEntity.getAvailableSeats();
 
         int bookedSeats = seatRepository.countByTripAndStatus(tripEntity, SeatStatus.BOOKED);
@@ -92,7 +90,6 @@ public class TripServiceImpl implements TripService {
                 .distanceInKm(route.getDistanceKm())
                 .availableSeats(availableSeats)
                 .fare(tripEntity.getFare())
-                .seatMatrix(seatMatrix)
                 .totalRows(TOTAL_ROWS)
                 .seatsPerRow(SEATS_PER_ROW)
                 .build();
@@ -105,9 +102,17 @@ public class TripServiceImpl implements TripService {
      * Handles duplicates by taking the first occurrence.
      * 
      * @param tripEntity the trip entity for which to build the seat matrix
-     * @return 2D list representing the seat matrix
+     * @return 2D list representing the seat
+     * 
+     *
      */
-    private List<List<SeatDTO>> buildSeatMatrix(TripEntity tripEntity) {
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<List<SeatDTO>> getSeatMatrix(Long tripId) {
+        TripEntity tripEntity = tripRepository.findById(tripId)
+                .orElseThrow(() -> new TripNotFoundException("Trip not found with id: " + tripId));
+
         List<SeatEntity> seats = seatRepository.findByTripOrderBySeatNumber(tripEntity);
 
         Map<String, SeatEntity> seatMap = new LinkedHashMap<>();

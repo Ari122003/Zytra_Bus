@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useTripDetails, useLockSeats } from "@/hooks"
+import { useTripDetails, useLockSeats, useSeatMatrix } from "@/hooks"
 import { useUserProfile } from "@/contexts/UserContext"
 import { Button } from "@/components/ui/button"
 import { getErrorMessage } from "@/lib/utils"
@@ -16,6 +16,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Wifi,
+  WifiOff,
 } from "lucide-react"
 
 /**
@@ -156,6 +158,32 @@ export default function BookingPage() {
   const [showTripDetails, setShowTripDetails] = useState(true)
   const [lockError, setLockError] = useState<string | null>(null)
 
+  // Fetch trip details (without seat matrix)
+  const {
+    data: tripDetails,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useTripDetails(tripId ? parseInt(tripId) : null)
+
+  // WebSocket connection for real-time seat matrix updates
+  const {
+    seatMatrix: wsSeatMatrix,
+    isConnected: wsConnected,
+    error: wsError,
+    reconnect: wsReconnect,
+  } = useSeatMatrix(tripId ? parseInt(tripId) : null)
+
+  // Lock seats mutation
+  const lockSeatsMutation = useLockSeats()
+  const { userProfile } = useUserProfile()
+
+  // Use seat matrix from WebSocket
+  const seatMatrix = useMemo(() => {
+    return wsSeatMatrix || []
+  }, [wsSeatMatrix, wsConnected])
+  
   // Persist selected seats in sessionStorage so that going to payment
   // and then coming back (or soft refreshes) retains the previous selection.
   useEffect(() => {
@@ -167,35 +195,13 @@ export default function BookingPage() {
     }
   }, [selectedSeats, storageKey])
 
-  // Fetch trip details
-  const {
-    data: tripDetails,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useTripDetails(tripId ? parseInt(tripId) : null)
-
-  // Lock seats mutation
-  const lockSeatsMutation = useLockSeats()
-  const { userProfile } = useUserProfile()
-
-  // Get seat matrix from API response
-  const seatMatrix = useMemo(() => {
-    return tripDetails?.seatMatrix || []
-  }, [tripDetails?.seatMatrix])
-  
-  // Flatten seat matrix for price calculations
-  const allSeats = useMemo(() => {
-    return seatMatrix.flat()
-  }, [seatMatrix])
-
   const handleSeatSelect = (seatNumber: string) => {
     setSelectedSeats(prev => {
       if (prev.includes(seatNumber)) {
         return prev.filter(s => s !== seatNumber)
       }
       if (prev.length >= 6) {
+        
         // Maximum 6 seats per booking
         return prev
       }
@@ -204,11 +210,10 @@ export default function BookingPage() {
   }
 
   const totalAmount = useMemo(() => {
-    return selectedSeats.reduce((total, seatNumber) => {
-      const seat = allSeats.find(s => s.seatNumber === seatNumber)
+    return selectedSeats.reduce((total) => {
       return total + ( tripDetails?.fare || 0)
     }, 0)
-  }, [selectedSeats, allSeats, tripDetails?.fare])
+  }, [selectedSeats, tripDetails?.fare])
 
   const handleProceedToPayment = async () => {
     if (selectedSeats.length === 0 || !tripId) return
@@ -268,10 +273,26 @@ export default function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32 md:pb-8">
+    <div className="min-h-screen bg-background pb-40 md:pb-8">
+      {/* WebSocket Connection Status */}
+      {wsError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4">
+          <div className="bg-amber-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <WifiOff className="h-5 w-5 shrink-0" />
+            <p className="flex-1 text-sm">Real-time updates disconnected</p>
+            <button
+              onClick={wsReconnect}
+              className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-colors"
+            >
+              Reconnect
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Error Toast */}
       {lockError && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 max-w-md w-full mx-4">
           <div className="bg-destructive text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
             <AlertCircle className="h-5 w-5 shrink-0" />
             <p className="flex-1 text-sm">{lockError}</p>
@@ -295,11 +316,25 @@ export default function BookingPage() {
             >
               <ArrowLeft size={24} />
             </button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-lg md:text-xl font-bold text-foreground">Select Seats</h1>
               <p className="text-sm text-muted-foreground">
-                {tripDetails.source} → {tripDetails.destination}
+                {tripDetails?.source} → {tripDetails?.destination}
               </p>
+            </div>
+            {/* Connection Indicator */}
+            <div className="flex items-center gap-2">
+              {wsConnected ? (
+                <>
+                  <Wifi className="h-5 w-5 text-green-500" />
+                  <span className="text-xs text-green-600 dark:text-green-400 hidden md:inline">Live</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-5 w-5 text-gray-400" />
+                  <span className="text-xs text-gray-500 hidden md:inline">Offline</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -390,6 +425,24 @@ export default function BookingPage() {
 
             {/* Seat Layout */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 md:p-6">
+              {/* Debug Info */}
+              {seatMatrix.length === 0 && (
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">
+                        {wsConnected ? 'Waiting for seat data...' : 'Connecting to server...'}
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        {wsConnected 
+                          ? 'WebSocket connected, requesting seat matrix from server'
+                          : 'Establishing real-time connection'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col items-center">
                 {/* Driver */}
                 <div className="w-full flex justify-end mb-6 pr-4" style={{ maxWidth: '280px' }}>
@@ -400,6 +453,19 @@ export default function BookingPage() {
 
                 {/* Seat Matrix - 2x2 layout with aisle */}
                 <div className="space-y-2">
+                  {seatMatrix.length === 0 && wsConnected && (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground">Loading seat layout...</p>
+                    </div>
+                  )}
+                  
+                  {seatMatrix.length === 0 && !wsConnected && (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-red-600">WebSocket not connected. {wsError || 'Trying to connect...'}</p>
+                    </div>
+                  )}
+                  
                   {seatMatrix.map((row, rowIndex) => (
                     <div key={ROW_LABELS[rowIndex] || rowIndex} className="flex items-center gap-1">
                       {/* Row Label */}
@@ -514,7 +580,7 @@ export default function BookingPage() {
       </div>
 
       {/* Mobile Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-border shadow-lg lg:hidden z-20">
+      <div className="fixed bottom-16 left-0 right-0 bg-white dark:bg-slate-800 border-t border-border shadow-lg lg:hidden z-50">
         <div className="p-4">
           {selectedSeats.length > 0 ? (
             <div className="flex items-center justify-between mb-3">

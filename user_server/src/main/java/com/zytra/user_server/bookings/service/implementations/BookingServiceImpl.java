@@ -43,6 +43,7 @@ import com.zytra.user_server.user.repository.UserRepository;
 
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import com.zytra.user_server.trips.service.SeatMatrixBroadcastService;
 
 @Service
 @RequiredArgsConstructor
@@ -56,6 +57,7 @@ public class BookingServiceImpl implements BookingService {
     private final TicketService ticketService;
     private final TicketRepository ticketRepository;
     private final NotificationManager notificationManager;
+    private final SeatMatrixBroadcastService broadcastService;
 
     /**
      * Processes a booking for selected seats on a trip.
@@ -140,6 +142,11 @@ public class BookingServiceImpl implements BookingService {
 
         // Send booking confirmation notification
         sendBookingConfirmationNotification(user, trip, seats);
+
+        // Broadcast seat matrix update to all connected clients
+        // log.info("[BROADCAST TRIGGER] createBooking - About to broadcast for tripId:
+        // {}", tripId);
+        broadcastService.broadcastSeatMatrixUpdate(tripId);
 
         return BookingResponse.builder().message("Booking Successful").build();
     }

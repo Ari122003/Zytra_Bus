@@ -32,17 +32,17 @@ public class TripStatusScheduler {
     @Transactional
     public void updateTripStatuses() {
         try {
-            log.info("Running trip status update scheduler at {}", LocalTime.now());
 
             int ongoingCount = markTripsAsOngoing();
             int completedCount = markTripsAsCompleted();
 
-            if (ongoingCount > 0 || completedCount > 0) {
-                log.info("Trip status update: {} trips marked as ONGOING, {} trips marked as COMPLETED",
-                        ongoingCount, completedCount);
-            } else {
-                log.info("Trip status update: No trips to update");
-            }
+            // if (ongoingCount > 0 || completedCount > 0) {
+            // log.info("Trip status update: {} trips marked as ONGOING, {} trips marked as
+            // COMPLETED",
+            // ongoingCount, completedCount);
+            // } else {
+            // log.info("Trip status update: No trips to update");
+            // }
         } catch (Exception e) {
             log.error("Error updating trip statuses", e);
         }
@@ -68,9 +68,6 @@ public class TripStatusScheduler {
         List<TripEntity> activeTrips = new ArrayList<>();
         activeTrips.addAll(activeTripsToday);
         activeTrips.addAll(activeTripsYesterday);
-
-        log.info("{} ACTIVE trips found ({} from today, {} from yesterday)",
-                activeTrips.size(), activeTripsToday.size(), activeTripsYesterday.size());
 
         if (activeTrips.isEmpty()) {
             return 0;
@@ -98,16 +95,13 @@ public class TripStatusScheduler {
 
             if (shouldBeOngoing) {
                 tripsToUpdate.add(trip);
-                log.debug("Trip {} scheduled for ONGOING (dep: {}, arr: {}, current: {}, overnight: {})",
-                        trip.getId(), departureTime, arrivalTime, currentTime, isOvernightTrip);
+
             }
         }
 
         for (TripEntity trip : tripsToUpdate) {
             trip.setStatus(TripStatus.ONGOING);
-            log.info("Trip {} marked as ONGOING (departure: {}, arrival: {})",
-                    trip.getId(), trip.getSchedule().getDepartureTime(),
-                    trip.getSchedule().getArrivalTime());
+
         }
 
         if (!tripsToUpdate.isEmpty()) {
@@ -138,9 +132,6 @@ public class TripStatusScheduler {
         ongoingTrips.addAll(ongoingTripsToday);
         ongoingTrips.addAll(ongoingTripsYesterday);
 
-        log.info("{} ONGOING trips found ({} from today, {} from yesterday)",
-                ongoingTrips.size(), ongoingTripsToday.size(), ongoingTripsYesterday.size());
-
         if (ongoingTrips.isEmpty()) {
             return 0;
         }
@@ -164,15 +155,13 @@ public class TripStatusScheduler {
 
             if (shouldBeCompleted) {
                 tripsToUpdate.add(trip);
-                log.debug("Trip {} scheduled for COMPLETED (dep: {}, arr: {}, current: {}, overnight: {})",
-                        trip.getId(), departureTime, arrivalTime, currentTime, isOvernightTrip);
+
             }
         }
 
         for (TripEntity trip : tripsToUpdate) {
             trip.setStatus(TripStatus.COMPLETED);
-            log.info("Trip {} marked as COMPLETED (arrival: {})",
-                    trip.getId(), trip.getSchedule().getArrivalTime());
+
         }
 
         if (!tripsToUpdate.isEmpty()) {

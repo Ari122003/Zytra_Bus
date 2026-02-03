@@ -22,10 +22,16 @@ public class WebConfig implements WebMvcConfigurer {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:3000");
-        config.addAllowedOrigin("http://localhost:3001");
-        config.addAllowedOrigin("http://localhost:5173");
-        config.addAllowedOrigin("http://localhost:4200");
+        // Use addAllowedOriginPattern instead of addAllowedOrigin when credentials are
+        // enabled
+        // Allow both localhost and 127.0.0.1 with common development ports
+        config.addAllowedOriginPattern("http://localhost:*");
+        config.addAllowedOriginPattern("http://127.0.0.1:*");
+        config.addAllowedOriginPattern("https://localhost:*");
+        config.addAllowedOriginPattern("https://127.0.0.1:*");
+        // Allow local network access
+        config.addAllowedOriginPattern("http://192.168.*.*:*");
+        config.addAllowedOriginPattern("https://192.168.*.*:*");
         config.addAllowedHeader("*");
         config.addExposedHeader("Authorization");
         config.addAllowedMethod("GET");

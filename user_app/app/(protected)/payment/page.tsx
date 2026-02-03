@@ -506,7 +506,7 @@ export default function PaymentPage() {
       </div>
 
       {/* Mobile Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-border shadow-lg lg:hidden z-20">
+      <div className="fixed bottom-16 left-0 right-0 bg-white dark:bg-slate-800 border-t border-border shadow-lg lg:hidden z-50">
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <div>

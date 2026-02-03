@@ -26,6 +26,7 @@ import com.zytra.user_server.seat.entity.SeatEntity;
 import com.zytra.user_server.seat.repository.SeatRepository;
 
 import lombok.RequiredArgsConstructor;
+import com.zytra.user_server.trips.service.SeatMatrixBroadcastService;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,7 @@ public class SeatServiceImpl implements SeatService {
 
     private final UserRepository userRepository;
     private final SeatRepository seatRepository;
+    private final SeatMatrixBroadcastService broadcastService;
 
     private static final int LOCK_DURATION_MINUTES = 10;
 
@@ -132,6 +134,8 @@ public class SeatServiceImpl implements SeatService {
                 .message("Seats locked successfully")
                 .lockedSeats(lockedSeatNumbers)
                 .lockExpiresAt(now.plusMinutes(LOCK_DURATION_MINUTES)).build();
+
+        broadcastService.broadcastSeatMatrixUpdate(tripId);
 
         return response;
 

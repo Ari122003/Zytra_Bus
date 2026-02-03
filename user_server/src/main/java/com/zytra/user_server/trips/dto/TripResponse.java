@@ -30,7 +30,6 @@ public class TripResponse {
     private int availableSeats;
     private BigDecimal fare;
 
-    private List<List<SeatDTO>> seatMatrix;
     private int totalRows;
     private int seatsPerRow;
 
