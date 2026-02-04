@@ -18,12 +18,15 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.zytra.user_server.enums.SeatStatus;
 import com.zytra.user_server.seat.dto.LockSeatsResponse;
 import com.zytra.user_server.seat.entity.SeatEntity;
 import com.zytra.user_server.seat.repository.SeatRepository;
+import com.zytra.user_server.trips.event.SeatMatrixUpdateEvent;
 
 import lombok.RequiredArgsConstructor;
 import com.zytra.user_server.trips.service.SeatMatrixBroadcastService;
@@ -34,6 +37,7 @@ public class SeatServiceImpl implements SeatService {
 
     private final UserRepository userRepository;
     private final SeatRepository seatRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final SeatMatrixBroadcastService broadcastService;
 
     private static final int LOCK_DURATION_MINUTES = 10;
@@ -135,7 +139,8 @@ public class SeatServiceImpl implements SeatService {
                 .lockedSeats(lockedSeatNumbers)
                 .lockExpiresAt(now.plusMinutes(LOCK_DURATION_MINUTES)).build();
 
-        broadcastService.broadcastSeatMatrixUpdate(tripId);
+        // Publish event to broadcast AFTER transaction commits
+        eventPublisher.publishEvent(new SeatMatrixUpdateEvent(this, tripId));
 
         return response;
 

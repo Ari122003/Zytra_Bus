@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import com.zytra.user_server.bookings.dto.BookingDetails;
@@ -35,6 +37,7 @@ import com.zytra.user_server.tickets.entity.TicketEntity;
 import com.zytra.user_server.tickets.repository.TicketRepository;
 import com.zytra.user_server.tickets.service.TicketService;
 import com.zytra.user_server.trips.entity.TripEntity;
+import com.zytra.user_server.trips.event.SeatMatrixUpdateEvent;
 import com.zytra.user_server.trips.exception.TripNotFoundException;
 import com.zytra.user_server.trips.repository.TripRepository;
 import com.zytra.user_server.user.entity.UserEntity;
@@ -57,6 +60,7 @@ public class BookingServiceImpl implements BookingService {
     private final TicketService ticketService;
     private final TicketRepository ticketRepository;
     private final NotificationManager notificationManager;
+    private final ApplicationEventPublisher eventPublisher;
     private final SeatMatrixBroadcastService broadcastService;
 
     /**
@@ -143,10 +147,8 @@ public class BookingServiceImpl implements BookingService {
         // Send booking confirmation notification
         sendBookingConfirmationNotification(user, trip, seats);
 
-        // Broadcast seat matrix update to all connected clients
-        // log.info("[BROADCAST TRIGGER] createBooking - About to broadcast for tripId:
-        // {}", tripId);
-        broadcastService.broadcastSeatMatrixUpdate(tripId);
+        // Publish event to broadcast AFTER transaction commits
+        eventPublisher.publishEvent(new SeatMatrixUpdateEvent(this, tripId));
 
         return BookingResponse.builder().message("Booking Successful").build();
     }

@@ -24,20 +24,13 @@ public class ClearExpiredLocksService {
     private final SeatRepository seatRepository;
     private final SeatMatrixBroadcastService broadcastService;
 
-    /**
-     * Scheduled task that runs every 30 seconds to release expired seat locks.
-     * Frees up seats that have passed their lock expiration time, making them
-     * available for other users.
-     */
     @Scheduled(fixedRate = 30_000)
     @Transactional
     public void clearExpiredSeatLocks() {
         LocalDateTime now = LocalDateTime.now();
 
-        // Get all seats with expired locks before clearing
         List<SeatEntity> expiredSeats = seatRepository.findByLockedUntilBefore(now);
 
-        // Get unique trip IDs from expired seats
         Set<Long> affectedTripIds = expiredSeats.stream()
                 .map(seat -> seat.getTrip().getId())
                 .collect(Collectors.toSet());
@@ -47,7 +40,8 @@ public class ClearExpiredLocksService {
         if (releasedCount > 0) {
             log.info("Released {} expired seat locks at {}", releasedCount, now);
 
-            // Broadcast updates for each affected trip
+            // Broadcast updates for affected trips (broadcast service handles cache
+            // eviction)
             affectedTripIds.forEach(tripId -> {
                 broadcastService.broadcastSeatMatrixUpdate(tripId);
             });
