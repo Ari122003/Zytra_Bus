@@ -15,7 +15,7 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
   const [seatMatrix, setSeatMatrix] = useState<Seat[][]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const clientRef = useRef<Client | null>(null);
   const subscriptionRef = useRef<StompSubscription | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,12 +46,8 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
           status = 'UNAVAILABLE';
         } else if (seat.lockedUntil) {
           const lockedUntilDate = new Date(seat.lockedUntil);
-          console.log(seat.lockOwner);
-          console.log(currentUserId);
-          
           if (lockedUntilDate > now) {
             if (seat.lockOwner === currentUserId) {
-
               status = 'AVAILABLE';
             } else {
               status = 'LOCKED_BY_OTHER';
@@ -73,7 +69,7 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
 
   const connect = useCallback(() => {
     if (!tripId) return;
-    
+
     // Don't create a new client if one is already active
     if (clientRef.current?.active) {
       return;
@@ -82,12 +78,12 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
     try {
       // Get authentication token
       const token = tokenManager.getAccessToken();
-      
+
       if (!token) {
         setError('Authentication required');
         return;
       }
-      
+
       const client = new Client({
         webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
         connectHeaders: {
@@ -118,7 +114,7 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
             }
           );
           subscriptionRef.current = userSubscription;
-          
+
           // Subscribe to broadcast updates for real-time changes
           const topicSubscription = client.subscribe(
             `/topic/seat-matrix/${tripId}`,
@@ -132,7 +128,7 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
               }
             }
           );
-          
+
           // Request initial seat matrix data
           client.publish({
             destination: `/app/seat-matrix/${tripId}`,
@@ -164,7 +160,7 @@ export const useSeatMatrix = (tripId: number | null): UseSeatMatrixReturn => {
   }, [tripId, processSeatMatrix]);
 
   const disconnect = useCallback(() => {
-    
+
     if (subscriptionRef.current) {
       subscriptionRef.current.unsubscribe();
       subscriptionRef.current = null;

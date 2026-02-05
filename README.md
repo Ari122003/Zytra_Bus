@@ -7,6 +7,8 @@
   [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
   [![Next.js](https://img.shields.io/badge/Next.js-16.0.7-black.svg)](https://nextjs.org/)
   [![React](https://img.shields.io/badge/React-19.2.0-blue.svg)](https://react.dev/)
+  [![Redis](https://img.shields.io/badge/Redis-Cache-red.svg)](https://redis.io/)
+  [![WebSocket](https://img.shields.io/badge/WebSocket-Enabled-yellow.svg)](https://stomp.github.io/)
 </div>
 
 ## 📋 Table of Contents
@@ -55,9 +57,14 @@ Zytra Bus is a production-ready, full-stack bus booking platform designed to han
 
 #### Real-time Updates
 
-- **Live Seat Availability** - WebSocket/polling for instant seat status updates
+- **WebSocket-Based Seat Matrix** - Real-time seat availability updates using Spring WebSocket with STOMP protocol
+- **Redis Cache Integration** - High-performance caching layer for seat matrix data and distributed locking
+- **Live Seat Availability** - Instant seat status updates pushed to all connected clients automatically
+- **Topic-Based Broadcasting** - Trip-specific subscription channels for efficient updates
+- **Automatic Change Detection** - Real-time updates triggered on seat lock, booking confirmation, or lock expiration
 - **Conflict Resolution** - Graceful handling of concurrent booking attempts
 - **Audit Trail** - Complete booking lifecycle tracking and reconciliation
+- **Fallback REST API** - Backward compatible HTTP endpoints for non-WebSocket clients
 
 ## 🏗 Architecture
 
@@ -67,9 +74,14 @@ Zytra Bus is a production-ready, full-stack bus booking platform designed to han
 │   (Next.js)     │◄─────►│   (Next.js)     │◄─────►│  Spring Boot    │
 │   Port: 3000    │       │   Port: 3001    │       │  Backend API    │
 └─────────────────┘       └─────────────────┘       │  Port: 8080     │
+      ▲                          ▲                   │                 │
+      │                          │                   │  ┌──────────┐   │
+      │    WebSocket (STOMP)     │                   │  │PostgreSQL│   │
+      └──────────────────────────┘                   │  └──────────┘   │
                                                      │                 │
                                                      │  ┌──────────┐   │
-                                                     │  │PostgreSQL│   │
+                                                     │  │  Redis   │   │
+                                                     │  │  Cache   │   │
                                                      │  └──────────┘   │
                                                      └─────────────────┘
 ```
@@ -78,7 +90,7 @@ Zytra Bus is a production-ready, full-stack bus booking platform designed to han
 
 - `user_app/` - Customer-facing Next.js application
 - `driver_app/` - Driver management Next.js application
-- `user_server/` - Unified Spring Boot REST API
+- `user_server/` - Unified Spring Boot REST API with WebSocket support
 
 ### Database Schema
 
@@ -106,15 +118,18 @@ The database schema is designed to support high-concurrency booking operations w
 
 ### Backend
 
-| Technology      | Version | Purpose               |
-| --------------- | ------- | --------------------- |
-| Spring Boot     | 4.0.0   | Application framework |
-| Java            | 21      | Programming language  |
-| Spring Data JPA | 4.0.0   | ORM and data access   |
-| PostgreSQL      | -       | Primary database      |
-| JWT             | -       | Authentication tokens |
-| Spring Mail     | -       | Email service         |
-| Maven           | -       | Build tool            |
+| Technology       | Version | Purpose               |
+| ---------------- | ------- | --------------------- |
+| Spring Boot      | 4.0.0   | Application framework |
+| Java             | 21      | Programming language  |
+| Spring Data JPA  | 4.0.0   | ORM and data access   |
+| PostgreSQL       | -       | Primary database      |
+| Redis            | -       | Cache & session store |
+| Spring WebSocket | -       | Real-time updates     |
+| STOMP            | -       | WebSocket protocol    |
+| JWT              | -       | Authentication tokens |
+| Spring Mail      | -       | Email service         |
+| Maven            | -       | Build tool            |
 
 ## 🚀 Getting Started
 
@@ -126,6 +141,7 @@ Ensure you have the following installed:
 - **Java JDK** 21 ([Download](https://openjdk.org/))
 - **Maven** 3.8+ ([Download](https://maven.apache.org/))
 - **PostgreSQL** 14+ ([Download](https://www.postgresql.org/))
+- **Redis** 6.0+ ([Download](https://redis.io/download/)) - Required for real-time seat matrix and caching
 - **Git** ([Download](https://git-scm.com/))
 
 ### Installation
@@ -149,7 +165,23 @@ CREATE DATABASE zytra_bus;
 \q
 ```
 
-3. **Install User App dependencies**
+3. **Set up Redis** (required for real-time features)
+
+```bash
+# Install Redis (Windows with WSL or use Redis for Windows)
+# Linux/MacOS
+brew install redis  # macOS
+# or
+sudo apt-get install redis-server  # Ubuntu/Debian
+
+# Start Redis server
+redis-server
+
+# Verify Redis is running
+redis-cli ping  # Should return "PONG"
+```
+
+4. **Install User App dependencies**
 
 ```bash
 cd user_app
@@ -157,7 +189,7 @@ npm install
 cd ..
 ```
 
-4. **Install Driver App dependencies**
+5. **Install Driver App dependencies**
 
 ```bash
 cd driver_app
@@ -165,7 +197,7 @@ npm install
 cd ..
 ```
 
-5. **Install backend dependencies**
+6. **Install backend dependencies**
 
 ```bash
 cd user_server
@@ -186,6 +218,11 @@ spring.datasource.username=postgres
 spring.datasource.password=yourpassword
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
+
+# Redis Cache
+spring.data.redis.host=localhost
+spring.data.redis.port=6379
+spring.cache.type=redis
 
 # JWT
 jwt.secret=your-256-bit-secret-key-here
@@ -373,6 +410,30 @@ docker-compose up
 - `GET /api/bookings/{id}` - Get booking details
 - `PUT /api/bookings/{id}/cancel` - Cancel booking
 - `POST /api/bookings/{id}/payment` - Process payment
+
+### Real-time Seat Matrix (WebSocket)
+
+**WebSocket Connection:**
+
+- `ws://localhost:8080/ws` - WebSocket connection endpoint
+
+**STOMP Endpoints:**
+
+- **Subscribe:** `/topic/seat-matrix/{tripId}` - Receive real-time seat updates
+- **Send:** `/socket/seat-matrix/{tripId}` - Request current seat matrix
+
+**REST Fallback:**
+
+- `GET /user/trips/{tripId}/seat-matrix` - Get seat matrix via HTTP
+
+**Features:**
+
+- Real-time seat availability updates pushed to all connected clients
+- Automatic updates on seat lock, booking, or lock expiration
+- Redis-cached seat matrix for high performance
+- Trip-specific channels for efficient broadcasting
+
+For detailed WebSocket implementation guide, see [user_server/docs/REALTIME_SEAT_MATRIX_IMPLEMENTATION.md](user_server/docs/REALTIME_SEAT_MATRIX_IMPLEMENTATION.md)
 
 ### Driver Routes
 
